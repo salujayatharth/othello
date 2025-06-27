@@ -70,6 +70,14 @@
         .piece.flipping {
             animation: flip-piece 0.4s ease-in-out;
         }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+            50% { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        }
+        .player-area.active {
+            animation: breathe 2s ease-in-out infinite;
+        }
         
         /* Shimmer animation for board clearing */
         .shimmer-overlay {
@@ -119,18 +127,13 @@
             <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
         </div>
         
-        <!-- Score and Turn Info -->
-        <div id="info-panel" class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mb-2 w-full max-w-sm">
-            <div class="flex items-center space-x-2">
-                <div class="w-5 h-5 rounded-full bg-gray-800 dark:bg-gray-700"></div>
-                <span class="font-bold text-lg" id="black-score">2</span>
-            </div>
-            <div id="turn-indicator" class="text-center">
-                <p class="font-semibold text-sm">Black's Turn</p>
-            </div>
-            <div class="flex items-center space-x-2">
-                <span class="font-bold text-lg" id="white-score">2</span>
-                <div class="w-5 h-5 rounded-full bg-white border border-gray-300"></div>
+
+        <!-- White Player (Player 1) - Top Side -->
+        <div id="white-player-area" class="player-area bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md mb-2 transition-all duration-1000">
+            <div class="flex items-center justify-center space-x-2">
+                <div class="w-6 h-6 rounded-full bg-white border border-gray-300"></div>
+                <span class="font-bold text-xl" id="white-score">2</span>
+                <span class="font-medium text-lg">White</span>
             </div>
         </div>
         
@@ -139,6 +142,15 @@
 
         <!-- Game Board -->
         <div id="board" class="board shadow-2xl"></div>
+
+        <!-- Black Player (Player 2) - Bottom Side -->
+        <div id="black-player-area" class="player-area bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md mt-2 transition-all duration-1000">
+            <div class="flex items-center justify-center space-x-2">
+                <div class="w-6 h-6 rounded-full bg-gray-800 dark:bg-gray-700"></div>
+                <span class="font-bold text-xl" id="black-score">2</span>
+                <span class="font-medium text-lg">Black</span>
+            </div>
+        </div>
 
         <!-- Controls -->
         <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-3">
@@ -153,7 +165,8 @@
         const boardElement = document.getElementById('board');
         const blackScoreElement = document.getElementById('black-score');
         const whiteScoreElement = document.getElementById('white-score');
-        const turnIndicatorElement = document.getElementById('turn-indicator');
+        const blackPlayerArea = document.getElementById('black-player-area');
+        const whitePlayerArea = document.getElementById('white-player-area');
         const messageBoxElement = document.getElementById('message-box');
         const newGameBtn = document.getElementById('new-game-btn');
         const showHintsCheckbox = document.getElementById('show-hints-checkbox');
@@ -268,11 +281,13 @@
             blackScoreElement.textContent = blackScore;
             whiteScoreElement.textContent = whiteScore;
             
-            const turnText = turnIndicatorElement.querySelector('p');
+            // Update breathing animation for current player
             if (currentPlayer === BLACK) {
-                turnText.textContent = "Black's Turn";
+                blackPlayerArea.classList.add('active');
+                whitePlayerArea.classList.remove('active');
             } else {
-                turnText.textContent = "White's Turn";
+                whitePlayerArea.classList.add('active');
+                blackPlayerArea.classList.remove('active');
             }
         }
 
@@ -490,7 +505,8 @@
             }
             
             messageBoxElement.textContent = winnerMessage;
-            turnIndicatorElement.querySelector('p').textContent = "Finished";
+            blackPlayerArea.classList.remove('active');
+            whitePlayerArea.classList.remove('active');
             boardElement.style.pointerEvents = 'none';
         }
 
