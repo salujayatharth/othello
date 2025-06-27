@@ -196,6 +196,7 @@
         let currentPlayer;
         let showHints = true;
         let audioContext;
+        let gameHistory = []; // Store history of moves
 
         // Initialize audio context for sounds
         function initAudio() {
@@ -204,6 +205,39 @@
             } catch (e) {
                 console.warn('Web Audio API not supported');
             }
+        }
+
+        // Save game state to localStorage
+        function saveGameState() {
+            const gameState = {
+                board: board.map(row => [...row]), // Deep copy
+                currentPlayer: currentPlayer,
+                gameHistory: [...gameHistory], // Deep copy
+                timestamp: Date.now()
+            };
+            localStorage.setItem('othello-game-state', JSON.stringify(gameState));
+        }
+
+        // Load game state from localStorage
+        function loadGameState() {
+            try {
+                const savedState = localStorage.getItem('othello-game-state');
+                if (savedState) {
+                    const gameState = JSON.parse(savedState);
+                    board = gameState.board || [];
+                    currentPlayer = gameState.currentPlayer || BLACK;
+                    gameHistory = gameState.gameHistory || [];
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Failed to load game state:', e);
+            }
+            return false;
+        }
+
+        // Clear saved game state
+        function clearSavedGameState() {
+            localStorage.removeItem('othello-game-state');
         }
 
         // Play placement sound
@@ -255,8 +289,10 @@
             board[4][4] = WHITE;
             
             currentPlayer = BLACK;
+            gameHistory = []; // Reset move history
             messageBoxElement.textContent = '';
             renderBoard();
+            saveGameState(); // Save initial state
         }
 
         function renderBoard() {
@@ -457,12 +493,29 @@
                 return;
             }
 
+            // Record the move in history before making changes
+            const moveRecord = {
+                moveNumber: gameHistory.length + 1,
+                player: currentPlayer,
+                position: { r, c },
+                piecesFlipped: [...piecesToFlip], // Copy array
+                timestamp: Date.now(),
+                boardBefore: board.map(row => [...row]) // Deep copy of board before move
+            };
+
             // Make the move
             messageBoxElement.textContent = '';
             board[r][c] = currentPlayer;
             piecesToFlip.forEach(p => {
                 board[p.r][p.c] = currentPlayer;
             });
+            
+            // Add board state after move to the record
+            moveRecord.boardAfter = board.map(row => [...row]);
+            gameHistory.push(moveRecord);
+            
+            // Save game state after each move
+            saveGameState();
             
             // Play placement sound
             playPlacementSound();
@@ -499,6 +552,8 @@
                 }
             }
             
+            // Save game state after turn switch
+            saveGameState();
             boardElement.style.pointerEvents = 'auto';
         }
 
@@ -604,6 +659,7 @@
                 boardElement.style.pointerEvents = 'none';
                 await playShimmerAnimation();
                 boardElement.style.pointerEvents = 'auto';
+                clearSavedGameState(); // Clear saved state before starting new game
                 initGame();
             }
         });
@@ -616,7 +672,14 @@
         window.onload = () => {
             initializeTheme();
             initAudio();
-            initGame();
+            
+            // Try to load saved game state, if not available start new game
+            if (!loadGameState()) {
+                initGame();
+            } else {
+                // If we loaded a saved state, render the board
+                renderBoard();
+            }
         };
     </script>
 </body>
