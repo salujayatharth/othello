@@ -195,6 +195,15 @@
         }
 
         async function updateBoardAnimated(newPiecePos, piecesToFlip) {
+            // Clear all valid move hints to prevent overlap with new pieces
+            const allCells = boardElement.querySelectorAll('.cell');
+            allCells.forEach(cell => {
+                const existingHint = cell.querySelector('.valid-move-hint');
+                if (existingHint) {
+                    existingHint.remove();
+                }
+            });
+
             // Place the new piece with scale animation
             const newCell = boardElement.querySelector(`[data-r="${newPiecePos.r}"][data-c="${newPiecePos.c}"]`);
             if (newCell) {
