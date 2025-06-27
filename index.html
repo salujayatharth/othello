@@ -254,6 +254,7 @@
                 board: board.map(row => [...row]), // Deep copy
                 currentPlayer: currentPlayer,
                 gameHistory: [...gameHistory], // Deep copy
+                showHints: showHints, // Save hints preference
                 timestamp: Date.now()
             };
             localStorage.setItem('othello-game-state', JSON.stringify(gameState));
@@ -268,6 +269,7 @@
                     board = gameState.board || [];
                     currentPlayer = gameState.currentPlayer || BLACK;
                     gameHistory = gameState.gameHistory || [];
+                    showHints = gameState.showHints !== undefined ? gameState.showHints : true; // Load hints preference with fallback
                     return true;
                 }
             } catch (e) {
@@ -745,6 +747,7 @@
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
             updateScoresAndValidMoves();
+            saveGameState(); // Save state when hints preference changes
         });
         soundToggleBtn.addEventListener('click', toggleSound);
 
@@ -761,6 +764,9 @@
                 // If we loaded a saved state, render the board
                 renderBoard();
             }
+            
+            // Update checkbox to reflect loaded showHints preference
+            showHintsCheckbox.checked = showHints;
         };
     </script>
 </body>
