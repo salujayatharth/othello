@@ -143,7 +143,12 @@
     <div class="w-full max-w-4xl mx-auto flex flex-col items-center h-full justify-center">
         <div class="flex justify-between items-center mb-1 w-full max-w-2xl">
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Othello</h1>
-            <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+            <div class="flex items-center space-x-2">
+                <button id="sound-toggle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Sound">
+                    <span id="sound-icon">🔊</span>
+                </button>
+                <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+            </div>
         </div>
         
 
@@ -189,6 +194,8 @@
         const messageBoxElement = document.getElementById('message-box');
         const newGameBtn = document.getElementById('new-game-btn');
         const showHintsCheckbox = document.getElementById('show-hints-checkbox');
+        const soundToggleBtn = document.getElementById('sound-toggle-btn');
+        const soundIcon = document.getElementById('sound-icon');
 
         const EMPTY = 0;
         const BLACK = 1;
@@ -199,6 +206,7 @@
         let showHints = true;
         let audioContext;
         let gameHistory = []; // Store history of moves
+        let soundEnabled = true; // Track sound state
 
         // Initialize audio context for sounds
         function initAudio() {
@@ -207,6 +215,37 @@
             } catch (e) {
                 console.warn('Web Audio API not supported');
             }
+        }
+
+        // Load sound preference from localStorage
+        function loadSoundPreference() {
+            try {
+                const savedSoundEnabled = localStorage.getItem('othello-sound-enabled');
+                if (savedSoundEnabled !== null) {
+                    soundEnabled = JSON.parse(savedSoundEnabled);
+                }
+            } catch (e) {
+                console.warn('Failed to load sound preference:', e);
+            }
+            updateSoundIcon();
+        }
+
+        // Save sound preference to localStorage
+        function saveSoundPreference() {
+            localStorage.setItem('othello-sound-enabled', JSON.stringify(soundEnabled));
+        }
+
+        // Update sound icon based on current state
+        function updateSoundIcon() {
+            soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+            soundToggleBtn.title = soundEnabled ? 'Disable Sound' : 'Enable Sound';
+        }
+
+        // Toggle sound on/off
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            saveSoundPreference();
+            updateSoundIcon();
         }
 
         // Save game state to localStorage
@@ -244,6 +283,8 @@
 
         // Play placement sound
         function playPlacementSound() {
+            if (!soundEnabled) return; // Exit early if sound is disabled
+            
             try {
                 const audio = new Audio('drop.mp3');
                 audio.volume = 0.5; // Set moderate volume
@@ -686,11 +727,13 @@
             showHints = e.target.checked;
             updateScoresAndValidMoves();
         });
+        soundToggleBtn.addEventListener('click', toggleSound);
 
         // Initialize theme and start game
         window.onload = () => {
             initializeTheme();
             initAudio();
+            loadSoundPreference(); // Load sound preference from localStorage
             
             // Try to load saved game state, if not available start new game
             if (!loadGameState()) {
