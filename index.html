@@ -613,17 +613,27 @@
                 for (let diagonal = 0; diagonal < totalDiagonals; diagonal++) {
                     setTimeout(() => {
                         // Calculate pieces for this diagonal line
-                        for (let i = 0; i <= Math.min(diagonal, 7, 14 - diagonal); i++) {
-                            const row = i;
-                            const col = diagonal - i;
+                        // For diagonal d: row ranges from max(0, d-7) to min(d, 7)
+                        const startRow = Math.max(0, diagonal - 7);
+                        const endRow = Math.min(diagonal, 7);
+                        
+                        for (let row = startRow; row <= endRow; row++) {
+                            const col = diagonal - row;
                             
                             if (row >= 0 && row < 8 && col >= 0 && col < 8) {
                                 const piece = document.createElement('div');
                                 piece.className = 'shimmer-piece';
                                 
+                                // Hide the existing piece in this cell as the shimmer passes over it
+                                const actualCell = boardElement.querySelector(`[data-r="${row}"][data-c="${col}"]`);
+                                const existingPiece = actualCell?.querySelector('.piece');
+                                if (existingPiece) {
+                                    existingPiece.style.opacity = '0';
+                                    existingPiece.style.transition = 'opacity 0.3s ease-out';
+                                }
+                                
                                 // Position piece in the center of the cell
                                 // Get the actual cell element to match its position exactly
-                                const actualCell = boardElement.querySelector(`[data-r="${row}"][data-c="${col}"]`);
                                 if (actualCell) {
                                     const cellRect = actualCell.getBoundingClientRect();
                                     const boardRect = boardElement.getBoundingClientRect();
