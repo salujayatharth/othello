@@ -144,4 +144,6 @@ This project is open source and available under the [MIT License](LICENSE).
 
 [⭐ Star this repo](https://github.com/salujayatharth/othello) if you found it helpful!
 
+Sound file: [credit](https://pixabay.com/sound-effects/coin2-89425)
+
 </div>
