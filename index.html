@@ -231,14 +231,41 @@
         let currentHistoryIndex = -1; // Track current position in history (-1 means no moves)
 
         let soundEnabled = true; // Track sound state
+        let audioBuffer = null; // Cached audio buffer for drop.mp3
 
 
         // Initialize audio context for sounds
         function initAudio() {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                loadAudioBuffer(); // Load drop.mp3 once during initialization
             } catch (e) {
                 console.warn('Web Audio API not supported');
+            }
+        }
+
+        // Load and cache the audio buffer once
+        function loadAudioBuffer() {
+            if (!audioContext) return;
+            
+            try {
+                const request = new XMLHttpRequest();
+                request.open('GET', 'drop.mp3', true);
+                request.responseType = 'arraybuffer';
+                request.addEventListener('load', function() {
+                    audioContext.decodeAudioData(request.response, function(buffer) {
+                        audioBuffer = buffer;
+                        console.log('Audio buffer loaded successfully');
+                    }, function(error) {
+                        console.warn('Could not decode audio data:', error);
+                    });
+                });
+                request.addEventListener('error', function() {
+                    console.warn('Could not load audio file');
+                });
+                request.send();
+            } catch (e) {
+                console.warn('Could not load audio buffer:', e);
             }
         }
 
@@ -313,13 +340,23 @@
         // Play placement sound
         function playPlacementSound() {
             if (!soundEnabled) return; // Exit early if sound is disabled
+            if (!audioContext || !audioBuffer) return; // Exit if no audio context or buffer available
             
             try {
-                const audio = new Audio('drop.mp3');
-                audio.volume = 0.5; // Set moderate volume
-                audio.play().catch(e => {
-                    console.warn('Could not play sound:', e);
-                });
+                // Create a new buffer source from cached buffer
+                const source = audioContext.createBufferSource();
+                const gainNode = audioContext.createGain();
+                
+                // Set volume
+                gainNode.gain.value = 0.5;
+                
+                // Connect the audio graph
+                source.buffer = audioBuffer;
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Play the sound
+                source.start();
             } catch (e) {
                 console.warn('Could not play sound:', e);
             }
@@ -328,41 +365,41 @@
         // Play reverse sound for undo
         function playUndoSound() {
             if (!soundEnabled) return; // Exit early if sound is disabled
-            if (!audioContext) return; // Exit if no audio context available
+            if (!audioContext || !audioBuffer) return; // Exit if no audio context or buffer available
             
             try {
-                const request = new XMLHttpRequest();
-                request.open('GET', 'drop.mp3', true);
-                request.responseType = 'arraybuffer';
-                request.addEventListener('load', function() {
-                    audioContext.decodeAudioData(request.response, function(buffer) {
-                        // Create a new buffer source
-                        const source = audioContext.createBufferSource();
-                        
-                        // Reverse the audio data for each channel
-                        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-                            Array.prototype.reverse.call(buffer.getChannelData(channel));
-                        }
-                        
-                        // Create gain node for volume control
-                        const gainNode = audioContext.createGain();
-                        gainNode.gain.value = 0.3; // Lower volume for undo
-                        
-                        // Connect the audio graph
-                        source.buffer = buffer;
-                        source.connect(gainNode);
-                        gainNode.connect(audioContext.destination);
-                        
-                        // Play the reversed audio
-                        source.start();
-                    }, function(error) {
-                        console.warn('Could not decode audio data:', error);
-                    });
-                });
-                request.addEventListener('error', function() {
-                    console.warn('Could not load audio file for undo sound');
-                });
-                request.send();
+                // Create a copy of the audio buffer for reversing
+                const reversedBuffer = audioContext.createBuffer(
+                    audioBuffer.numberOfChannels, 
+                    audioBuffer.length, 
+                    audioBuffer.sampleRate
+                );
+                
+                // Copy and reverse the audio data for each channel
+                for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                    const originalData = audioBuffer.getChannelData(channel);
+                    const reversedData = reversedBuffer.getChannelData(channel);
+                    
+                    // Copy data in reverse order
+                    for (let i = 0; i < originalData.length; i++) {
+                        reversedData[i] = originalData[originalData.length - 1 - i];
+                    }
+                }
+                
+                // Create a new buffer source
+                const source = audioContext.createBufferSource();
+                const gainNode = audioContext.createGain();
+                
+                // Set lower volume for undo
+                gainNode.gain.value = 0.3;
+                
+                // Connect the audio graph
+                source.buffer = reversedBuffer;
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Play the reversed audio
+                source.start();
             } catch (e) {
                 console.warn('Could not play undo sound:', e);
             }
