@@ -90,27 +90,43 @@
             z-index: 10;
         }
         
-        .shimmer-dot {
+        .shimmer-piece {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+            width: 85%;
+            height: 85%;
             border-radius: 50%;
             opacity: 0;
+            background-color: #1f2937; /* Start as black piece */
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            transform: translateX(-50%) translateY(-50%);
         }
         
-        @keyframes shimmer-diagonal {
+        @keyframes shimmer-flip {
             0% {
                 opacity: 0;
-                transform: scale(0.5);
+                transform: translateX(-50%) translateY(-50%) scale(0.5) rotateY(0deg);
+                background-color: #1f2937; /* Black */
+                box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            25% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-50%) scale(1) rotateY(90deg);
             }
             50% {
                 opacity: 1;
-                transform: scale(1);
+                transform: translateX(-50%) translateY(-50%) scale(1) rotateY(180deg);
+                background-color: #f3f4f6; /* White */
+                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            75% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-50%) scale(1) rotateY(270deg);
             }
             100% {
                 opacity: 0;
-                transform: scale(0.5);
+                transform: translateX(-50%) translateY(-50%) scale(0.5) rotateY(360deg);
+                background-color: #1f2937; /* Back to black */
+                box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
             }
         }
         
@@ -531,44 +547,43 @@
                 shimmerOverlay.className = 'shimmer-overlay';
                 boardElement.appendChild(shimmerOverlay);
                 
-                // Create dots for diagonal animation (top-left to bottom-right)
-                const totalDots = 15; // Number of diagonal lines
-                const dotsPerLine = 8; // Maximum dots per diagonal line
-                const animationDuration = 100; // Duration for each dot in ms
+                // Create pieces for diagonal animation (top-left to bottom-right)
+                const totalDiagonals = 15; // Number of diagonal lines
+                const animationDuration = 600; // Duration for each piece in ms
                 const staggerDelay = 80; // Delay between diagonal lines
                 
-                let dotCount = 0;
+                let pieceCount = 0;
                 
                 // Create diagonal lines from top-left to bottom-right
-                for (let diagonal = 0; diagonal < totalDots; diagonal++) {
+                for (let diagonal = 0; diagonal < totalDiagonals; diagonal++) {
                     setTimeout(() => {
-                        // Calculate dots for this diagonal line
+                        // Calculate pieces for this diagonal line
                         for (let i = 0; i <= Math.min(diagonal, 7, 14 - diagonal); i++) {
                             const row = i;
                             const col = diagonal - i;
                             
                             if (row >= 0 && row < 8 && col >= 0 && col < 8) {
-                                const dot = document.createElement('div');
-                                dot.className = 'shimmer-dot';
+                                const piece = document.createElement('div');
+                                piece.className = 'shimmer-piece';
                                 
-                                // Position dot in the center of the cell
+                                // Position piece in the center of the cell
                                 const cellSize = 100 / 8; // Each cell is 12.5% of board
-                                dot.style.left = `${col * cellSize + cellSize / 2}%`;
-                                dot.style.top = `${row * cellSize + cellSize / 2}%`;
+                                piece.style.left = `${col * cellSize + cellSize / 2}%`;
+                                piece.style.top = `${row * cellSize + cellSize / 2}%`;
                                 
-                                // Animate dot
-                                dot.style.animation = `shimmer-diagonal ${animationDuration}ms ease-in-out`;
+                                // Animate piece with flipping effect
+                                piece.style.animation = `shimmer-flip ${animationDuration}ms ease-in-out`;
                                 
-                                shimmerOverlay.appendChild(dot);
-                                dotCount++;
+                                shimmerOverlay.appendChild(piece);
+                                pieceCount++;
                                 
-                                // Remove dot after animation
+                                // Remove piece after animation
                                 setTimeout(() => {
-                                    dot.remove();
-                                    dotCount--;
+                                    piece.remove();
+                                    pieceCount--;
                                     
-                                    // When all dots are done, remove overlay and resolve
-                                    if (dotCount === 0) {
+                                    // When all pieces are done, remove overlay and resolve
+                                    if (pieceCount === 0) {
                                         shimmerOverlay.remove();
                                         resolve();
                                     }
