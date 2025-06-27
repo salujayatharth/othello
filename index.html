@@ -241,30 +241,12 @@
 
         // Play placement sound
         function playPlacementSound() {
-            if (!audioContext) return;
-            
-            // Resume audio context if suspended (required by some browsers)
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            
             try {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                // Create a pleasant "ding" sound
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
-                
-                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                
-                oscillator.type = 'sine';
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.2);
+                const audio = new Audio('drop.mp3');
+                audio.volume = 0.5; // Set moderate volume
+                audio.play().catch(e => {
+                    console.warn('Could not play sound:', e);
+                });
             } catch (e) {
                 console.warn('Could not play sound:', e);
             }
