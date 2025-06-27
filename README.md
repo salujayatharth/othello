@@ -21,7 +21,10 @@
 - 🎨 **Modern UI** - Clean, professional interface built with Tailwind CSS
 - 🔄 **New Game** - Quick restart functionality
 - 📊 **Live Score Tracking** - Real-time score updates for both players
-- 🎪 **Turn Indicators** - Clear visual indication of current player
+- 🎪 **Turn Indicators** - Clear visual indication of current player with breathing animations
+- ↶↷ **Undo/Redo** - Full move history with undo and redo functionality
+- 💾 **Local Storage** - Automatic game state saving, sound preferences, and settings persistence
+- 🔊 **Sound Effects** - Audio feedback for piece placement with toggle control
 
 ## 🎯 How to Play
 
@@ -43,6 +46,8 @@ Have the majority of your colored pieces on the board when the game ends.
 - **Click** any highlighted cell to place your piece
 - **New Game** button to restart
 - **Show valid moves** checkbox to toggle move hints
+- **Undo** (↶) and **Redo** (↷) buttons to navigate move history
+- **Sound toggle** (🔊/🔇) button to enable/disable audio effects
 
 ## 🛠️ Technology Stack
 
@@ -118,10 +123,8 @@ Contributions are welcome! Here's how you can help:
 ### Ideas for Contributions
 - 🤖 AI opponent implementation
 - 📊 Game statistics and history
-- 🔊 Sound effects
 - 🎵 Background music
 - 🏆 Achievement system
-- 💾 Save/load game state
 - 🌐 Multiplayer support
 - 📱 PWA (Progressive Web App) features
 
