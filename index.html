@@ -93,8 +93,7 @@
         
         .shimmer-piece {
             position: absolute;
-            width: 85%;
-            height: 85%;
+            /* Size will be set dynamically to match cell size */
             border-radius: 50%;
             opacity: 0;
             background-color: #1f2937; /* Start as black piece */
@@ -623,9 +622,34 @@
                                 piece.className = 'shimmer-piece';
                                 
                                 // Position piece in the center of the cell
-                                const cellSize = 100 / 8; // Each cell is 12.5% of board
-                                piece.style.left = `${col * cellSize + cellSize / 2}%`;
-                                piece.style.top = `${row * cellSize + cellSize / 2}%`;
+                                // Get the actual cell element to match its position exactly
+                                const actualCell = boardElement.querySelector(`[data-r="${row}"][data-c="${col}"]`);
+                                if (actualCell) {
+                                    const cellRect = actualCell.getBoundingClientRect();
+                                    const boardRect = boardElement.getBoundingClientRect();
+                                    
+                                    // Calculate position relative to board
+                                    const leftPercent = ((cellRect.left - boardRect.left + cellRect.width / 2) / boardRect.width) * 100;
+                                    const topPercent = ((cellRect.top - boardRect.top + cellRect.height / 2) / boardRect.height) * 100;
+                                    
+                                    piece.style.left = `${leftPercent}%`;
+                                    piece.style.top = `${topPercent}%`;
+                                    
+                                    // Set piece size to 85% of cell size (matching regular pieces)
+                                    const pieceSize = cellRect.width * 0.85;
+                                    piece.style.width = `${pieceSize}px`;
+                                    piece.style.height = `${pieceSize}px`;
+                                } else {
+                                    // Fallback to simple calculation
+                                    const cellSize = 100 / 8;
+                                    piece.style.left = `${col * cellSize + cellSize / 2}%`;
+                                    piece.style.top = `${row * cellSize + cellSize / 2}%`;
+                                    // Fallback size (approximate)
+                                    const boardWidth = boardElement.offsetWidth || 400;
+                                    const approxCellSize = boardWidth / 10; // Rough estimate
+                                    piece.style.width = `${approxCellSize * 0.85}px`;
+                                    piece.style.height = `${approxCellSize * 0.85}px`;
+                                }
                                 
                                 // Animate piece with flipping effect
                                 piece.style.animation = `shimmer-flip ${animationDuration}ms ease-in-out`;
