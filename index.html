@@ -70,12 +70,54 @@
         .piece.flipping {
             animation: flip-piece 0.4s ease-in-out;
         }
+        
+        /* Shimmer animation for board clearing */
+        .shimmer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .shimmer-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            opacity: 0;
+        }
+        
+        @keyframes shimmer-diagonal {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+        }
+        
+        .board {
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-md mx-auto">
-        <h1 class="text-3xl md:text-4xl font-bold text-center mb-2 text-gray-800 dark:text-white">Othello</h1>
+        <div class="flex justify-between items-center mb-2">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">Othello</h1>
+            <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+        </div>
         
         <!-- Score and Turn Info -->
         <div id="info-panel" class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md mb-4">
@@ -100,7 +142,6 @@
 
         <!-- Controls -->
         <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-3">
-            <button id="new-game-btn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">New Game</button>
             <div class="flex items-center space-x-2">
                 <input type="checkbox" id="show-hints-checkbox" class="h-4 w-4 rounded text-green-600 focus:ring-green-500" checked>
                 <label for="show-hints-checkbox" class="text-sm font-medium text-gray-700 dark:text-gray-300">Show valid moves</label>
@@ -507,11 +548,73 @@
             updateThemeIcon();
         }
 
+        // Shimmer animation function
+        async function playShimmerAnimation() {
+            return new Promise((resolve) => {
+                // Create shimmer overlay
+                const shimmerOverlay = document.createElement('div');
+                shimmerOverlay.className = 'shimmer-overlay';
+                boardElement.appendChild(shimmerOverlay);
+                
+                // Create dots for diagonal animation (top-left to bottom-right)
+                const totalDots = 15; // Number of diagonal lines
+                const dotsPerLine = 8; // Maximum dots per diagonal line
+                const animationDuration = 100; // Duration for each dot in ms
+                const staggerDelay = 80; // Delay between diagonal lines
+                
+                let dotCount = 0;
+                
+                // Create diagonal lines from top-left to bottom-right
+                for (let diagonal = 0; diagonal < totalDots; diagonal++) {
+                    setTimeout(() => {
+                        // Calculate dots for this diagonal line
+                        for (let i = 0; i <= Math.min(diagonal, 7, 14 - diagonal); i++) {
+                            const row = i;
+                            const col = diagonal - i;
+                            
+                            if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                                const dot = document.createElement('div');
+                                dot.className = 'shimmer-dot';
+                                
+                                // Position dot in the center of the cell
+                                const cellSize = 100 / 8; // Each cell is 12.5% of board
+                                dot.style.left = `${col * cellSize + cellSize / 2}%`;
+                                dot.style.top = `${row * cellSize + cellSize / 2}%`;
+                                
+                                // Animate dot
+                                dot.style.animation = `shimmer-diagonal ${animationDuration}ms ease-in-out`;
+                                
+                                shimmerOverlay.appendChild(dot);
+                                dotCount++;
+                                
+                                // Remove dot after animation
+                                setTimeout(() => {
+                                    dot.remove();
+                                    dotCount--;
+                                    
+                                    // When all dots are done, remove overlay and resolve
+                                    if (dotCount === 0) {
+                                        shimmerOverlay.remove();
+                                        resolve();
+                                    }
+                                }, animationDuration);
+                            }
+                        }
+                    }, diagonal * staggerDelay);
+                }
+            });
+        }
+
         // Event Listeners
         boardElement.addEventListener('click', handleCellClick);
-        newGameBtn.addEventListener('click', () => {
-             boardElement.style.pointerEvents = 'auto';
-             initGame();
+        newGameBtn.addEventListener('click', async () => {
+            // Show confirmation dialog
+            if (confirm('Are you sure you want to start a new game? This will reset the current game.')) {
+                boardElement.style.pointerEvents = 'none';
+                await playShimmerAnimation();
+                boardElement.style.pointerEvents = 'auto';
+                initGame();
+            }
         });
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
