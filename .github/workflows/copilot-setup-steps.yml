@@ -1,0 +1,126 @@
+name: "Copilot Setup Steps"
+
+# Automatically run the setup steps when they are changed to allow for easy validation, and
+# allow manual testing through the repository's "Actions" tab
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    # Set the permissions to the lowest permissions possible needed for your steps.
+    # Copilot will be given its own token for its operations.
+    permissions:
+      # If you want to clone the repository as part of your setup steps, for example to install dependencies, you'll need the `contents: read` permission. If you don't clone the repository in your setup steps, Copilot will do this for you automatically after the steps complete.
+      contents: read
+
+    # You can define any steps you want, and they will run before the agent starts.
+    # If you do not check out your code, Copilot will do this for you.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify game files
+        run: |
+          if [ -f "index.html" ]; then
+            echo "✓ Main game file found at index.html"
+            ls -lh index.html
+          else
+            echo "✗ Main game file not found at index.html"
+            echo "Available files in root directory:"
+            ls -la
+            exit 1
+          fi
+
+      - name: Validate HTML structure
+        run: |
+          echo "Checking HTML file structure..."
+          if grep -q "<title>Othello Game</title>" index.html; then
+            echo "✓ HTML title found"
+          else
+            echo "✗ HTML title not found"
+            exit 1
+          fi
+          
+          if grep -q "const EMPTY = 0" index.html; then
+            echo "✓ Game logic constants found"
+          else
+            echo "✗ Game logic constants not found"
+            exit 1
+          fi
+          
+          if grep -q "function initGame" index.html; then
+            echo "✓ Game initialization function found"
+          else
+            echo "✗ Game initialization function not found"
+            exit 1
+          fi
+
+      - name: Check dependencies and resources
+        run: |
+          echo "Checking external dependencies..."
+          if grep -q "tailwindcss" index.html; then
+            echo "✓ Tailwind CSS dependency found"
+          else
+            echo "✗ Tailwind CSS dependency not found"
+            exit 1
+          fi
+          
+          if grep -q "Inter" index.html; then
+            echo "✓ Google Fonts dependency found"
+          else
+            echo "✗ Google Fonts dependency not found"
+            exit 1
+          fi
+
+      - name: Run basic HTML validation
+        run: |
+          echo "Running basic HTML syntax checks..."
+          # Check for balanced div tags
+          if [ $(grep -o "<div" index.html | wc -l) -eq $(grep -o "</div>" index.html | wc -l) ]; then
+            echo "✓ Div tags are balanced"
+          else
+            echo "✗ Div tags are not balanced"
+            exit 1
+          fi
+          
+          # Check that script blocks are properly closed
+          if grep -q "<script>" index.html && grep -q "</script>" index.html; then
+            echo "✓ Script tags found and properly structured"
+          else
+            echo "✗ Script tags are missing or malformed"
+            exit 1
+          fi
+
+      - name: Run environment check
+        run: |
+          echo "Node.js version:"
+          node --version
+          echo "NPM version:"
+          npm --version
+          echo "Environment ready for Othello game development"
+
+      - name: Test game file accessibility
+        run: |
+          echo "Testing if game file can be served..."
+          # Simple test to ensure the file is readable and has expected content
+          if [ -r "index.html" ] && [ -s "index.html" ]; then
+            echo "✓ Game file is readable and non-empty"
+            echo "File size: $(stat -c%s index.html) bytes"
+          else
+            echo "✗ Game file is not accessible or empty"
+            exit 1
+          fi
