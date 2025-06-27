@@ -596,7 +596,7 @@
                         
                         // Change color at halfway point of animation
                         setTimeout(() => {
-                            piece.className = 'piece flipping ' + (currentPlayer === BLACK ? 'black' : 'white');
+                            piece.className = 'piece flipping gameplay ' + (currentPlayer === BLACK ? 'black' : 'white');
                         }, 200); // Half of flip-piece animation duration
                         
                         // Remove flipping class when animation completes
@@ -664,7 +664,7 @@
                                 const promise = new Promise(resolve => {
                                     // Change color at halfway point
                                     setTimeout(() => {
-                                        existingPiece.className = `piece fast-flipping ${expectedColor}`;
+                                        existingPiece.className = `piece fast-flipping gameplay ${expectedColor}`;
                                     }, 75); // Half of fast flip duration
                                     
                                     // Remove animation class when complete
