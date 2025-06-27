@@ -6,7 +6,7 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-> A modern, responsive implementation of the classic Othello (Reversi) board game with beautiful animations and dark mode support.
+> A modern, responsive implementation of the classic Othello (Reversi) board game with beautiful animations.
 
 ## 🎮 Play Now
 
@@ -16,7 +16,6 @@
 
 - 🎯 **Classic Othello Gameplay** - Full implementation of traditional Othello rules
 - 📱 **Responsive Design** - Perfect on desktop, tablet, and mobile devices
-- 🌙 **Dark Mode Support** - Automatic dark/light theme adaptation
 - 💡 **Move Hints** - Toggle-able valid move indicators for beginners
 - ⚡ **Smooth Animations** - Fluid piece placement and flipping animations
 - 🎨 **Modern UI** - Clean, professional interface built with Tailwind CSS
@@ -86,7 +85,6 @@ Have the majority of your colored pieces on the board when the game ends.
 - No build process required - it's a pure client-side application
 - All game logic is contained in `index.html`
 - Responsive design works on all screen sizes
-- Dark mode adapts to system preferences automatically
 
 ## 📁 Project Structure
 
@@ -106,7 +104,6 @@ othello/
 - **Animations**: CSS keyframes for smooth piece placement
 - **Responsive Grid**: CSS Grid for perfect board scaling
 - **Hover Effects**: Interactive feedback for better UX
-- **Theme Support**: Automatic dark/light mode detection
 
 ## 🤝 Contributing
 
