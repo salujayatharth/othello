@@ -633,6 +633,15 @@
         // Shimmer animation function
         async function playShimmerAnimation() {
             return new Promise((resolve) => {
+                // Clear all valid move hints at the start of shimmer animation
+                const allCells = boardElement.querySelectorAll('.cell');
+                allCells.forEach(cell => {
+                    const existingHint = cell.querySelector('.valid-move-hint');
+                    if (existingHint) {
+                        existingHint.remove();
+                    }
+                });
+                
                 // Create shimmer overlay
                 const shimmerOverlay = document.createElement('div');
                 shimmerOverlay.className = 'shimmer-overlay';
