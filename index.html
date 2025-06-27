@@ -160,17 +160,17 @@
         <div id="message-box" class="text-center font-semibold text-sm min-h-[20px] mb-1 text-green-600 dark:text-green-400"></div>
 
         <!-- Game Board with Undo/Redo Controls -->
-        <div class="flex items-center justify-center space-x-4 mb-1">
+        <div class="flex items-center justify-center space-x-2 md:space-x-4 mb-1">
             <!-- Undo Button -->
-            <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+            <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-xs md:text-sm" disabled>
                 ↶ Undo
             </button>
             
             <!-- Game Board -->
-            <div id="board" class="board shadow-2xl"></div>
+            <div id="board" class="board shadow-2xl flex-shrink-0"></div>
             
             <!-- Redo Button -->
-            <button id="redo-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+            <button id="redo-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-xs md:text-sm" disabled>
                 Redo ↷
             </button>
         </div>
@@ -277,42 +277,9 @@
         function playUndoSound() {
             try {
                 const audio = new Audio('drop.mp3');
-                audio.volume = 0.5;
-                // Create reversed effect by playing the sound backwards
-                audio.playbackRate = -1;
-                // For browsers that don't support negative playback rate, 
-                // we'll use a workaround with AudioContext
-                if (audioContext) {
-                    fetch('drop.mp3')
-                        .then(response => response.arrayBuffer())
-                        .then(data => audioContext.decodeAudioData(data))
-                        .then(audioBuffer => {
-                            // Reverse the audio buffer
-                            const reversedBuffer = audioContext.createBuffer(
-                                audioBuffer.numberOfChannels,
-                                audioBuffer.length,
-                                audioBuffer.sampleRate
-                            );
-                            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-                                const channelData = audioBuffer.getChannelData(channel);
-                                const reversedData = reversedBuffer.getChannelData(channel);
-                                for (let i = 0; i < channelData.length; i++) {
-                                    reversedData[i] = channelData[channelData.length - 1 - i];
-                                }
-                            }
-                            const source = audioContext.createBufferSource();
-                            source.buffer = reversedBuffer;
-                            source.connect(audioContext.destination);
-                            source.start();
-                        })
-                        .catch(e => {
-                            // Fallback: just play normal sound
-                            audio.play().catch(err => console.warn('Could not play sound:', err));
-                        });
-                } else {
-                    // Simple fallback
-                    audio.play().catch(e => console.warn('Could not play sound:', e));
-                }
+                audio.volume = 0.3; // Lower volume for undo
+                audio.playbackRate = 0.7; // Slower playback to simulate reverse effect
+                audio.play().catch(e => console.warn('Could not play undo sound:', e));
             } catch (e) {
                 console.warn('Could not play undo sound:', e);
             }
@@ -328,6 +295,7 @@
         function undoMove() {
             if (currentHistoryIndex < 0) return;
             
+            console.log('Undoing move at index:', currentHistoryIndex);
             const moveToUndo = gameHistory[currentHistoryIndex];
             
             // Restore board state before the move
@@ -355,6 +323,7 @@
             // Move forward in history
             currentHistoryIndex++;
             const moveToRedo = gameHistory[currentHistoryIndex];
+            console.log('Redoing move at index:', currentHistoryIndex);
             
             // Restore board state after the move
             board = moveToRedo.boardAfter.map(row => [...row]);
