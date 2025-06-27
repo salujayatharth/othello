@@ -56,8 +56,11 @@
             width: 30%;
             height: 30%;
             border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .valid-move-hint.show {
             opacity: 0.3;
-            transition: opacity 0.2s;
         }
         @keyframes place-piece {
             from { transform: scale(0); }
@@ -302,6 +305,11 @@
                         const hint = document.createElement('div');
                         hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
                         cell.appendChild(hint);
+                        
+                        // Smooth fade-in for initial render
+                        setTimeout(() => {
+                            hint.classList.add('show');
+                        }, 50);
                     }
 
                     boardElement.appendChild(cell);
@@ -401,6 +409,11 @@
                     const hint = document.createElement('div');
                     hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
                     cell.appendChild(hint);
+                    
+                    // Smooth fade-in after a brief delay to avoid flicker
+                    setTimeout(() => {
+                        hint.classList.add('show');
+                    }, 50);
                 }
             });
 
