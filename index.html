@@ -62,6 +62,14 @@
             from { transform: scale(0); }
             to { transform: scale(1); }
         }
+        @keyframes flip-piece {
+            0% { transform: scale(1) rotateY(0deg); }
+            50% { transform: scale(0.8) rotateY(90deg); }
+            100% { transform: scale(1) rotateY(180deg); }
+        }
+        .piece.flipping {
+            animation: flip-piece 0.4s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
@@ -186,6 +194,82 @@
             }
         }
 
+        async function updateBoardAnimated(newPiecePos, piecesToFlip) {
+            // Place the new piece with scale animation
+            const newCell = boardElement.querySelector(`[data-r="${newPiecePos.r}"][data-c="${newPiecePos.c}"]`);
+            if (newCell) {
+                const piece = document.createElement('div');
+                piece.className = 'piece ' + (currentPlayer === BLACK ? 'black' : 'white');
+                newCell.appendChild(piece);
+            }
+
+            // Animate flipping pieces
+            const flipPromises = piecesToFlip.map(pos => {
+                return new Promise(resolve => {
+                    const cell = boardElement.querySelector(`[data-r="${pos.r}"][data-c="${pos.c}"]`);
+                    const piece = cell?.querySelector('.piece');
+                    if (piece) {
+                        piece.classList.add('flipping');
+                        
+                        // Change color at halfway point of animation
+                        setTimeout(() => {
+                            piece.className = 'piece flipping ' + (currentPlayer === BLACK ? 'black' : 'white');
+                        }, 200); // Half of flip-piece animation duration
+                        
+                        // Remove flipping class when animation completes
+                        setTimeout(() => {
+                            piece.classList.remove('flipping');
+                            resolve();
+                        }, 400); // Full flip-piece animation duration
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+
+            // Wait for all flip animations to complete
+            await Promise.all(flipPromises);
+
+            // Update scores and valid move hints
+            updateScoresAndValidMoves();
+        }
+
+        function updateScoresAndValidMoves() {
+            let blackScore = 0;
+            let whiteScore = 0;
+            const validMoves = getValidMoves(currentPlayer);
+
+            // Count scores
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (board[r][c] === BLACK) blackScore++;
+                    else if (board[r][c] === WHITE) whiteScore++;
+                }
+            }
+
+            // Update hints for valid moves
+            const allCells = boardElement.querySelectorAll('.cell');
+            allCells.forEach(cell => {
+                const r = parseInt(cell.dataset.r);
+                const c = parseInt(cell.dataset.c);
+                const existingHint = cell.querySelector('.valid-move-hint');
+                
+                // Remove existing hint
+                if (existingHint) {
+                    existingHint.remove();
+                }
+                
+                // Add hint if this is a valid move and hints are enabled
+                if (showHints && board[r][c] === EMPTY && validMoves.some(move => move.r === r && move.c === c)) {
+                    const hint = document.createElement('div');
+                    hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
+                    cell.appendChild(hint);
+                }
+            });
+
+            updateScoresAndTurn(blackScore, whiteScore);
+        }
+
         function getPiecesToFlip(r, c, player) {
             if (board[r][c] !== EMPTY) return [];
 
@@ -260,11 +344,11 @@
                 board[p.r][p.c] = currentPlayer;
             });
             
-            renderBoard();
-            
-            // Disable board during turn switch
+            // Disable board during animations
             boardElement.style.pointerEvents = 'none';
-            await new Promise(resolve => setTimeout(resolve, 300)); // Short delay for piece flip animation
+            
+            // Use animated update instead of full board refresh
+            await updateBoardAnimated({ r, c }, piecesToFlip);
             
             switchTurn();
         }
@@ -275,7 +359,7 @@
             const validMovesForNextPlayer = getValidMoves(currentPlayer);
             if (validMovesForNextPlayer.length > 0) {
                  // Next player can move
-                renderBoard();
+                updateScoresAndValidMoves();
             } else {
                 // Next player must pass
                 messageBoxElement.textContent = `${currentPlayer === BLACK ? 'Black' : 'White'} has no moves and must pass.`;
@@ -284,7 +368,7 @@
                 const validMovesForCurrentPlayer = getValidMoves(currentPlayer);
                 if (validMovesForCurrentPlayer.length > 0) {
                      // Current player gets to go again
-                     renderBoard();
+                     updateScoresAndValidMoves();
                 } else {
                      // Game over, neither player can move
                      endGame();
@@ -327,7 +411,7 @@
         });
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
-            renderBoard();
+            updateScoresAndValidMoves();
         });
 
         // Initial game start
