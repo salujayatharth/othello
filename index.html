@@ -70,6 +70,49 @@
         .piece.flipping {
             animation: flip-piece 0.4s ease-in-out;
         }
+        @keyframes clear-piece {
+            0% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(0.3);
+                opacity: 0.7;
+            }
+            100% { 
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+        .piece.clearing {
+            animation: clear-piece 0.5s ease-in-out forwards;
+        }
+        .modal-enter {
+            animation: modal-slide-in 0.3s ease-out;
+        }
+        .modal-exit {
+            animation: modal-slide-out 0.3s ease-in forwards;
+        }
+        @keyframes modal-slide-in {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        @keyframes modal-slide-out {
+            from {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
@@ -98,6 +141,29 @@
         <!-- Game Board -->
         <div id="board" class="board shadow-2xl"></div>
 
+        <!-- New Game Confirmation Modal -->
+        <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 m-4 max-w-sm w-full transform transition-all">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 mb-4">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Start New Game?</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">This will reset the current game and start fresh. Your progress will be lost.</p>
+                    <div class="flex space-x-3">
+                        <button id="cancel-new-game" class="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                        <button id="confirm-new-game" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            New Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Controls -->
         <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-3">
             <button id="new-game-btn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">New Game</button>
@@ -116,6 +182,9 @@
         const messageBoxElement = document.getElementById('message-box');
         const newGameBtn = document.getElementById('new-game-btn');
         const showHintsCheckbox = document.getElementById('show-hints-checkbox');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const cancelNewGameBtn = document.getElementById('cancel-new-game');
+        const confirmNewGameBtn = document.getElementById('confirm-new-game');
 
         const EMPTY = 0;
         const BLACK = 1;
@@ -403,15 +472,135 @@
             boardElement.style.pointerEvents = 'none';
         }
 
+        // Modal functionality
+        function showConfirmationModal() {
+            confirmationModal.classList.remove('hidden');
+            const modalContent = confirmationModal.querySelector('div > div');
+            modalContent.classList.add('modal-enter');
+        }
+
+        function hideConfirmationModal() {
+            const modalContent = confirmationModal.querySelector('div > div');
+            modalContent.classList.remove('modal-enter');
+            modalContent.classList.add('modal-exit');
+            
+            setTimeout(() => {
+                confirmationModal.classList.add('hidden');
+                modalContent.classList.remove('modal-exit');
+            }, 300);
+        }
+
+        // Board clearing animation - from top-left to bottom-right
+        async function clearBoardAnimated() {
+            return new Promise(resolve => {
+                const allCells = [];
+                
+                // Collect all cells with pieces in diagonal order (top-left to bottom-right)
+                for (let diagonal = 0; diagonal < 15; diagonal++) { // 8+8-1 = 15 diagonals
+                    for (let r = 0; r < 8; r++) {
+                        const c = diagonal - r;
+                        if (c >= 0 && c < 8) {
+                            const cell = boardElement.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+                            const piece = cell?.querySelector('.piece');
+                            if (piece) {
+                                allCells.push({ cell, piece, diagonal });
+                            }
+                        }
+                    }
+                }
+
+                if (allCells.length === 0) {
+                    resolve();
+                    return;
+                }
+
+                // Group by diagonal and animate each diagonal with a delay
+                const diagonalGroups = {};
+                allCells.forEach(item => {
+                    if (!diagonalGroups[item.diagonal]) {
+                        diagonalGroups[item.diagonal] = [];
+                    }
+                    diagonalGroups[item.diagonal].push(item);
+                });
+
+                let completedAnimations = 0;
+                const totalDiagonals = Object.keys(diagonalGroups).length;
+
+                Object.keys(diagonalGroups).forEach((diagonal, index) => {
+                    setTimeout(() => {
+                        const items = diagonalGroups[diagonal];
+                        let piecesInDiagonal = items.length;
+                        let piecesAnimated = 0;
+
+                        items.forEach(item => {
+                            item.piece.classList.add('clearing');
+                            
+                            setTimeout(() => {
+                                item.piece.remove();
+                                piecesAnimated++;
+                                
+                                if (piecesAnimated === piecesInDiagonal) {
+                                    completedAnimations++;
+                                    if (completedAnimations === totalDiagonals) {
+                                        resolve();
+                                    }
+                                }
+                            }, 500); // Clear piece animation duration
+                        });
+                    }, index * 100); // Delay between diagonals
+                });
+            });
+        }
+
+        async function startNewGameWithAnimation() {
+            // Disable board interactions
+            boardElement.style.pointerEvents = 'none';
+            
+            // Clear message and update UI to show starting new game
+            messageBoxElement.textContent = 'Starting new game...';
+            
+            // Animate clearing the board
+            await clearBoardAnimated();
+            
+            // Initialize new game
+            initGame();
+            
+            // Re-enable board interactions
+            boardElement.style.pointerEvents = 'auto';
+            
+            // Clear the starting message
+            messageBoxElement.textContent = '';
+        }
+
         // Event Listeners
         boardElement.addEventListener('click', handleCellClick);
         newGameBtn.addEventListener('click', () => {
-             boardElement.style.pointerEvents = 'auto';
-             initGame();
+            showConfirmationModal();
+        });
+        cancelNewGameBtn.addEventListener('click', () => {
+            hideConfirmationModal();
+        });
+        confirmNewGameBtn.addEventListener('click', async () => {
+            hideConfirmationModal();
+            await startNewGameWithAnimation();
         });
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
             updateScoresAndValidMoves();
+        });
+
+        // Close modal when clicking outside of it
+        confirmationModal.addEventListener('click', (e) => {
+            if (e.target === confirmationModal) {
+                hideConfirmationModal();
+            }
+        });
+
+        // Handle escape key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !confirmationModal.classList.contains('hidden')) {
+                hideConfirmationModal();
+            }
         });
 
         // Initial game start
