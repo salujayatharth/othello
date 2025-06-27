@@ -159,8 +159,21 @@
         <!-- Game Message Box -->
         <div id="message-box" class="text-center font-semibold text-sm min-h-[20px] mb-1 text-green-600 dark:text-green-400"></div>
 
-        <!-- Game Board -->
-        <div id="board" class="board shadow-2xl"></div>
+        <!-- Game Board with Undo/Redo Controls -->
+        <div class="flex items-center justify-center space-x-4 mb-1">
+            <!-- Undo Button -->
+            <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                ↶ Undo
+            </button>
+            
+            <!-- Game Board -->
+            <div id="board" class="board shadow-2xl"></div>
+            
+            <!-- Redo Button -->
+            <button id="redo-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                Redo ↷
+            </button>
+        </div>
 
         <!-- Black Player (Player 2) - Bottom Side -->
         <div id="black-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mt-1 transition-all duration-1000">
@@ -189,6 +202,8 @@
         const messageBoxElement = document.getElementById('message-box');
         const newGameBtn = document.getElementById('new-game-btn');
         const showHintsCheckbox = document.getElementById('show-hints-checkbox');
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
 
         const EMPTY = 0;
         const BLACK = 1;
@@ -199,6 +214,7 @@
         let showHints = true;
         let audioContext;
         let gameHistory = []; // Store history of moves
+        let currentHistoryIndex = -1; // Track current position in history (-1 means no moves)
 
         // Initialize audio context for sounds
         function initAudio() {
@@ -215,6 +231,7 @@
                 board: board.map(row => [...row]), // Deep copy
                 currentPlayer: currentPlayer,
                 gameHistory: [...gameHistory], // Deep copy
+                currentHistoryIndex: currentHistoryIndex,
                 timestamp: Date.now()
             };
             localStorage.setItem('othello-game-state', JSON.stringify(gameState));
@@ -229,6 +246,7 @@
                     board = gameState.board || [];
                     currentPlayer = gameState.currentPlayer || BLACK;
                     gameHistory = gameState.gameHistory || [];
+                    currentHistoryIndex = gameState.currentHistoryIndex !== undefined ? gameState.currentHistoryIndex : -1;
                     return true;
                 }
             } catch (e) {
@@ -255,6 +273,103 @@
             }
         }
 
+        // Play reverse sound for undo
+        function playUndoSound() {
+            try {
+                const audio = new Audio('drop.mp3');
+                audio.volume = 0.5;
+                // Create reversed effect by playing the sound backwards
+                audio.playbackRate = -1;
+                // For browsers that don't support negative playback rate, 
+                // we'll use a workaround with AudioContext
+                if (audioContext) {
+                    fetch('drop.mp3')
+                        .then(response => response.arrayBuffer())
+                        .then(data => audioContext.decodeAudioData(data))
+                        .then(audioBuffer => {
+                            // Reverse the audio buffer
+                            const reversedBuffer = audioContext.createBuffer(
+                                audioBuffer.numberOfChannels,
+                                audioBuffer.length,
+                                audioBuffer.sampleRate
+                            );
+                            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                                const channelData = audioBuffer.getChannelData(channel);
+                                const reversedData = reversedBuffer.getChannelData(channel);
+                                for (let i = 0; i < channelData.length; i++) {
+                                    reversedData[i] = channelData[channelData.length - 1 - i];
+                                }
+                            }
+                            const source = audioContext.createBufferSource();
+                            source.buffer = reversedBuffer;
+                            source.connect(audioContext.destination);
+                            source.start();
+                        })
+                        .catch(e => {
+                            // Fallback: just play normal sound
+                            audio.play().catch(err => console.warn('Could not play sound:', err));
+                        });
+                } else {
+                    // Simple fallback
+                    audio.play().catch(e => console.warn('Could not play sound:', e));
+                }
+            } catch (e) {
+                console.warn('Could not play undo sound:', e);
+            }
+        }
+
+        // Update undo/redo button states
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = currentHistoryIndex < 0;
+            redoBtn.disabled = currentHistoryIndex >= gameHistory.length - 1;
+        }
+
+        // Undo last move
+        function undoMove() {
+            if (currentHistoryIndex < 0) return;
+            
+            const moveToUndo = gameHistory[currentHistoryIndex];
+            
+            // Restore board state before the move
+            board = moveToUndo.boardBefore.map(row => [...row]);
+            
+            // Switch to the previous player
+            currentPlayer = moveToUndo.player;
+            
+            // Move back in history
+            currentHistoryIndex--;
+            
+            // Play undo sound
+            playUndoSound();
+            
+            // Update display
+            renderBoard();
+            updateUndoRedoButtons();
+            saveGameState();
+        }
+
+        // Redo next move
+        function redoMove() {
+            if (currentHistoryIndex >= gameHistory.length - 1) return;
+            
+            // Move forward in history
+            currentHistoryIndex++;
+            const moveToRedo = gameHistory[currentHistoryIndex];
+            
+            // Restore board state after the move
+            board = moveToRedo.boardAfter.map(row => [...row]);
+            
+            // Switch to the next player (opposite of the move player)
+            currentPlayer = moveToRedo.player === BLACK ? WHITE : BLACK;
+            
+            // No sound for redo as per requirements
+            
+            // Update display
+            renderBoard();
+            updateUndoRedoButtons();
+            saveGameState();
+        }
+
         // All 8 directions to check for valid moves
         const directions = [
             { r: -1, c: -1 }, { r: -1, c: 0 }, { r: -1, c: 1 },
@@ -274,8 +389,10 @@
             
             currentPlayer = BLACK;
             gameHistory = []; // Reset move history
+            currentHistoryIndex = -1; // Reset history index
             messageBoxElement.textContent = '';
             renderBoard();
+            updateUndoRedoButtons(); // Update button states
             saveGameState(); // Save initial state
         }
 
@@ -506,13 +623,23 @@
             
             // Add board state after move to the record
             moveRecord.boardAfter = board.map(row => [...row]);
+            
+            // If we're not at the end of history (after undo), truncate future moves
+            if (currentHistoryIndex < gameHistory.length - 1) {
+                gameHistory = gameHistory.slice(0, currentHistoryIndex + 1);
+            }
+            
             gameHistory.push(moveRecord);
+            currentHistoryIndex = gameHistory.length - 1;
             
             // Save game state after each move
             saveGameState();
             
             // Play placement sound
             playPlacementSound();
+            
+            // Update undo/redo buttons
+            updateUndoRedoButtons();
             
             // Disable board during animations
             boardElement.style.pointerEvents = 'none';
@@ -682,6 +809,8 @@
                 initGame();
             }
         });
+        undoBtn.addEventListener('click', undoMove);
+        redoBtn.addEventListener('click', redoMove);
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
             updateScoresAndValidMoves();
@@ -696,8 +825,9 @@
             if (!loadGameState()) {
                 initGame();
             } else {
-                // If we loaded a saved state, render the board
+                // If we loaded a saved state, render the board and update buttons
                 renderBoard();
+                updateUndoRedoButtons();
             }
         };
     </script>
