@@ -139,6 +139,12 @@ This project is open source and available under the [MIT License](LICENSE).
 - Google Fonts for the beautiful Inter typeface
 - GitHub Pages for free hosting
 
+## Credits
+
+- [Othello icons created by cube29 - Flaticon](https://www.flaticon.com/free-icons/othello)
+- [Sound file](https://pixabay.com/sound-effects/coin2-89425)
+
+
 ---
 
 <div align="center">
@@ -147,6 +153,5 @@ This project is open source and available under the [MIT License](LICENSE).
 
 [⭐ Star this repo](https://github.com/salujayatharth/othello) if you found it helpful!
 
-Sound file: [credit](https://pixabay.com/sound-effects/coin2-89425)
 
 </div>
