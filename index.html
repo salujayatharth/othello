@@ -185,20 +185,33 @@
         <!-- Game Message Box -->
         <div id="message-box" class="text-center font-semibold text-sm min-h-[20px] mb-1 text-green-600 dark:text-green-400"></div>
 
-        <!-- Game Board with Undo/Redo Controls -->
-        <div class="flex items-center justify-center space-x-2 md:space-x-4 mb-1">
-            <!-- Undo Button -->
-            <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-xs md:text-sm" disabled>
-                ↶ Undo
-            </button>
+        <!-- Undo/Redo Controls (Top for mobile, sides for desktop) -->
+        <div class="flex flex-col md:flex-row items-center justify-center mb-1">
+            <!-- Undo/Redo buttons for mobile (top) -->
+            <div class="flex space-x-2 mb-2 md:hidden">
+                <button id="undo-btn-mobile" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-1 px-2 rounded-lg shadow-md transition-transform transform hover:scale-105 text-xs" disabled>
+                    ↶ Undo
+                </button>
+                <button id="redo-btn-mobile" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-1 px-2 rounded-lg shadow-md transition-transform transform hover:scale-105 text-xs" disabled>
+                    Redo ↷
+                </button>
+            </div>
             
-            <!-- Game Board -->
-            <div id="board" class="board shadow-2xl flex-shrink-0"></div>
-            
-            <!-- Redo Button -->
-            <button id="redo-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-xs md:text-sm" disabled>
-                Redo ↷
-            </button>
+            <!-- Desktop layout with board in center and buttons on sides -->
+            <div class="flex items-center justify-center space-x-2 md:space-x-4">
+                <!-- Undo Button (desktop - left side) -->
+                <button id="undo-btn-desktop" class="hidden md:block bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                    ↶ Undo
+                </button>
+                
+                <!-- Game Board -->
+                <div id="board" class="board shadow-2xl flex-shrink-0"></div>
+                
+                <!-- Redo Button (desktop - right side) -->
+                <button id="redo-btn-desktop" class="hidden md:block bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                    Redo ↷
+                </button>
+            </div>
         </div>
 
         <!-- Black Player (Player 2) - Bottom Side -->
@@ -229,8 +242,10 @@
         const newGameBtn = document.getElementById('new-game-btn');
         const showHintsCheckbox = document.getElementById('show-hints-checkbox');
 
-        const undoBtn = document.getElementById('undo-btn');
-        const redoBtn = document.getElementById('redo-btn');
+        const undoBtn = document.getElementById('undo-btn-desktop');
+        const redoBtn = document.getElementById('redo-btn-desktop');
+        const undoBtnMobile = document.getElementById('undo-btn-mobile');
+        const redoBtnMobile = document.getElementById('redo-btn-mobile');
 
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
         const soundIcon = document.getElementById('sound-icon');
@@ -424,8 +439,16 @@
 
         // Update undo/redo button states
         function updateUndoRedoButtons() {
-            undoBtn.disabled = currentHistoryIndex < 0;
-            redoBtn.disabled = currentHistoryIndex >= gameHistory.length - 1;
+            const canUndo = currentHistoryIndex >= 0;
+            const canRedo = currentHistoryIndex < gameHistory.length - 1;
+            
+            // Update desktop buttons
+            undoBtn.disabled = !canUndo;
+            redoBtn.disabled = !canRedo;
+            
+            // Update mobile buttons
+            undoBtnMobile.disabled = !canUndo;
+            redoBtnMobile.disabled = !canRedo;
         }
 
         // Undo last move
@@ -1025,6 +1048,8 @@
         });
         undoBtn.addEventListener('click', undoMove);
         redoBtn.addEventListener('click', redoMove);
+        undoBtnMobile.addEventListener('click', undoMove);
+        redoBtnMobile.addEventListener('click', redoMove);
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
             updateScoresAndValidMoves();
