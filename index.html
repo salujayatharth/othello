@@ -74,6 +74,23 @@
         .piece.flipping {
             animation: flip-piece 0.4s ease-in-out;
         }
+        
+        /* Fast animations for undo/redo */
+        @keyframes fast-flip-piece {
+            0% { transform: scale(1) rotateY(0deg); }
+            50% { transform: scale(0.8) rotateY(90deg); }
+            100% { transform: scale(1) rotateY(180deg); }
+        }
+        .piece.fast-flipping {
+            animation: fast-flip-piece 0.15s ease-in-out;
+        }
+        @keyframes fast-place-piece {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        .piece.fast-placing {
+            animation: fast-place-piece 0.1s ease-out;
+        }
 
         @keyframes breathe {
             0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
@@ -371,11 +388,14 @@
         }
 
         // Undo last move
-        function undoMove() {
+        async function undoMove() {
             if (currentHistoryIndex < 0) return;
             
             console.log('Undoing move at index:', currentHistoryIndex);
             const moveToUndo = gameHistory[currentHistoryIndex];
+            
+            // Disable board during animation
+            boardElement.style.pointerEvents = 'none';
             
             // Restore board state before the move
             board = moveToUndo.boardBefore.map(row => [...row]);
@@ -389,15 +409,21 @@
             // Play undo sound
             playUndoSound();
             
-            // Update display
-            renderBoard();
+            // Update display with fast animation
+            await renderBoardFastAnimated();
             updateUndoRedoButtons();
             saveGameState();
+            
+            // Re-enable board after animation
+            boardElement.style.pointerEvents = 'auto';
         }
 
         // Redo next move
-        function redoMove() {
+        async function redoMove() {
             if (currentHistoryIndex >= gameHistory.length - 1) return;
+            
+            // Disable board during animation
+            boardElement.style.pointerEvents = 'none';
             
             // Move forward in history
             currentHistoryIndex++;
@@ -412,10 +438,13 @@
             
             // No sound for redo as per requirements
             
-            // Update display
-            renderBoard();
+            // Update display with fast animation
+            await renderBoardFastAnimated();
             updateUndoRedoButtons();
             saveGameState();
+            
+            // Re-enable board after animation
+            boardElement.style.pointerEvents = 'auto';
         }
 
         // All 8 directions to check for valid moves
@@ -542,6 +571,83 @@
 
             // Wait for all flip animations to complete
             await Promise.all(flipPromises);
+        }
+
+        // Fast animated rendering for undo/redo operations
+        async function renderBoardFastAnimated() {
+            const allCells = boardElement.querySelectorAll('.cell');
+            const animationPromises = [];
+            
+            // First pass: remove invalid pieces and add new pieces with fast animations
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = boardElement.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+                    if (!cell) continue;
+                    
+                    const existingPiece = cell.querySelector('.piece');
+                    const boardValue = board[r][c];
+                    
+                    if (boardValue === EMPTY) {
+                        // Remove piece if it exists
+                        if (existingPiece) {
+                            existingPiece.remove();
+                        }
+                        // Clear any hints
+                        const existingHint = cell.querySelector('.valid-move-hint');
+                        if (existingHint) existingHint.remove();
+                    } else {
+                        // There should be a piece here
+                        const expectedColor = boardValue === BLACK ? 'black' : 'white';
+                        
+                        if (!existingPiece) {
+                            // Add new piece with fast placement animation
+                            const newPiece = document.createElement('div');
+                            newPiece.className = `piece fast-placing ${expectedColor}`;
+                            cell.appendChild(newPiece);
+                            
+                            // Create promise for animation completion
+                            const promise = new Promise(resolve => {
+                                setTimeout(() => {
+                                    newPiece.classList.remove('fast-placing');
+                                    resolve();
+                                }, 100); // Fast placement duration
+                            });
+                            animationPromises.push(promise);
+                        } else {
+                            // Check if piece needs to flip color
+                            const currentColor = existingPiece.classList.contains('black') ? 'black' : 'white';
+                            if (currentColor !== expectedColor) {
+                                // Animate color change with fast flip
+                                existingPiece.classList.add('fast-flipping');
+                                
+                                const promise = new Promise(resolve => {
+                                    // Change color at halfway point
+                                    setTimeout(() => {
+                                        existingPiece.className = `piece fast-flipping ${expectedColor}`;
+                                    }, 75); // Half of fast flip duration
+                                    
+                                    // Remove animation class when complete
+                                    setTimeout(() => {
+                                        existingPiece.classList.remove('fast-flipping');
+                                        resolve();
+                                    }, 150); // Full fast flip duration
+                                });
+                                animationPromises.push(promise);
+                            }
+                        }
+                        
+                        // Clear any hints on occupied cells
+                        const existingHint = cell.querySelector('.valid-move-hint');
+                        if (existingHint) existingHint.remove();
+                    }
+                }
+            }
+            
+            // Wait for all animations to complete
+            await Promise.all(animationPromises);
+            
+            // Update scores and valid moves after animations
+            updateScoresAndValidMoves();
         }
 
         function updateScoresAndValidMoves() {
