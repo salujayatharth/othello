@@ -578,11 +578,11 @@
                 }
             });
 
-            // Place the new piece without scale animation to avoid conflicts with flip animations
+            // Place the new piece with scale animation
             const newCell = boardElement.querySelector(`[data-r="${newPiecePos.r}"][data-c="${newPiecePos.c}"]`);
             if (newCell) {
                 const piece = document.createElement('div');
-                piece.className = 'piece gameplay ' + (currentPlayer === BLACK ? 'black' : 'white');
+                piece.className = 'piece ' + (currentPlayer === BLACK ? 'black' : 'white');
                 newCell.appendChild(piece);
             }
 
