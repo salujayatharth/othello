@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Othello Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 4px;
+            background-color: #166534; /* Darker Green */
+            border: 8px solid #15803d; /* Green */
+            border-radius: 8px;
+            padding: 8px;
+            aspect-ratio: 1 / 1;
+            width: min(90vw, 80vh, 600px);
+            height: min(90vw, 80vh, 600px);
+            margin: 0 auto;
+        }
+        .cell {
+            background-color: #15803d; /* Green */
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            aspect-ratio: 1 / 1;
+            transition: background-color 0.2s ease;
+        }
+        .cell:hover {
+            background-color: #16a34a; /* Lighter Green */
+        }
+        .piece {
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: place-piece 0.3s forwards;
+        }
+        .black {
+            background-color: #1f2937; /* Gray 800 */
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .white {
+            background-color: #f3f4f6; /* Gray 100 */
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .valid-move-hint {
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        @keyframes place-piece {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        @keyframes flip-piece {
+            0% { transform: scale(1) rotateY(0deg); }
+            50% { transform: scale(0.8) rotateY(90deg); }
+            100% { transform: scale(1) rotateY(180deg); }
+        }
+        .piece.flipping {
+            animation: flip-piece 0.4s ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+            50% { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        }
+        .player-area.active {
+            animation: breathe 2s ease-in-out infinite;
+        }
+        
+        /* Shimmer animation for board clearing */
+        .shimmer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .shimmer-piece {
+            position: absolute;
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            opacity: 0;
+            background-color: #1f2937; /* Start as black piece */
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            transform: translateX(-50%) translateY(-50%);
+        }
+        
+        @keyframes shimmer-flip {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-50%) scale(0.5) rotateY(0deg);
+                background-color: #1f2937; /* Black */
+                box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            25% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-50%) scale(1) rotateY(90deg);
+            }
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-50%) scale(1) rotateY(180deg);
+                background-color: #f3f4f6; /* White */
+                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            75% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-50%) scale(1) rotateY(270deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-50%) scale(0.5) rotateY(360deg);
+                background-color: #1f2937; /* Back to black */
+                box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            }
+        }
+        
+        .board {
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen max-h-screen overflow-hidden p-4">
+
+    <div class="w-full max-w-4xl mx-auto flex flex-col items-center h-full justify-center">
+        <div class="flex justify-between items-center mb-1 w-full max-w-2xl">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Othello</h1>
+            <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+        </div>
+        
+
+        <!-- White Player (Player 1) - Top Side -->
+        <div id="white-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mb-1 transition-all duration-1000">
+            <div class="flex items-center justify-center space-x-2">
+                <div class="w-5 h-5 rounded-full bg-white border border-gray-300"></div>
+                <span class="font-bold text-lg" id="white-score">2</span>
+                <span class="font-medium text-base">White</span>
+            </div>
+        </div>
+        
+        <!-- Game Message Box -->
+        <div id="message-box" class="text-center font-semibold text-sm min-h-[20px] mb-1 text-green-600 dark:text-green-400"></div>
+
+        <!-- Game Board -->
+        <div id="board" class="board shadow-2xl"></div>
+
+        <!-- Black Player (Player 2) - Bottom Side -->
+        <div id="black-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mt-1 transition-all duration-1000">
+            <div class="flex items-center justify-center space-x-2">
+                <div class="w-5 h-5 rounded-full bg-gray-800 dark:bg-gray-700"></div>
+                <span class="font-bold text-lg" id="black-score">2</span>
+                <span class="font-medium text-base">Black</span>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-2 flex justify-center items-center">
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="show-hints-checkbox" class="h-3 w-3 rounded text-green-600 focus:ring-green-500" checked>
+                <label for="show-hints-checkbox" class="text-xs font-medium text-gray-700 dark:text-gray-300">Show valid moves</label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const boardElement = document.getElementById('board');
+        const blackScoreElement = document.getElementById('black-score');
+        const whiteScoreElement = document.getElementById('white-score');
+        const blackPlayerArea = document.getElementById('black-player-area');
+        const whitePlayerArea = document.getElementById('white-player-area');
+        const messageBoxElement = document.getElementById('message-box');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const showHintsCheckbox = document.getElementById('show-hints-checkbox');
+
+        const EMPTY = 0;
+        const BLACK = 1;
+        const WHITE = 2;
+
+        let board = [];
+        let currentPlayer;
+        let showHints = true;
+        let audioContext;
+        let gameHistory = []; // Store history of moves
+
+        // Initialize audio context for sounds
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.warn('Web Audio API not supported');
+            }
+        }
+
+        // Save game state to localStorage
+        function saveGameState() {
+            const gameState = {
+                board: board.map(row => [...row]), // Deep copy
+                currentPlayer: currentPlayer,
+                gameHistory: [...gameHistory], // Deep copy
+                timestamp: Date.now()
+            };
+            localStorage.setItem('othello-game-state', JSON.stringify(gameState));
+        }
+
+        // Load game state from localStorage
+        function loadGameState() {
+            try {
+                const savedState = localStorage.getItem('othello-game-state');
+                if (savedState) {
+                    const gameState = JSON.parse(savedState);
+                    board = gameState.board || [];
+                    currentPlayer = gameState.currentPlayer || BLACK;
+                    gameHistory = gameState.gameHistory || [];
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Failed to load game state:', e);
+            }
+            return false;
+        }
+
+        // Clear saved game state
+        function clearSavedGameState() {
+            localStorage.removeItem('othello-game-state');
+        }
+
+        // Play placement sound
+        function playPlacementSound() {
+            if (!audioContext) return;
+            
+            // Resume audio context if suspended (required by some browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Create a pleasant "ding" sound
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                oscillator.type = 'sine';
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (e) {
+                console.warn('Could not play sound:', e);
+            }
+        }
+
+        // All 8 directions to check for valid moves
+        const directions = [
+            { r: -1, c: -1 }, { r: -1, c: 0 }, { r: -1, c: 1 },
+            { r: 0, c: -1 },                  { r: 0, c: 1 },
+            { r: 1, c: -1 }, { r: 1, c: 0 }, { r: 1, c: 1 }
+        ];
+
+        function initGame() {
+            // Create an 8x8 board filled with EMPTY
+            board = Array(8).fill(null).map(() => Array(8).fill(EMPTY));
+            
+            // Initial setup for Othello
+            board[3][3] = WHITE;
+            board[3][4] = BLACK;
+            board[4][3] = BLACK;
+            board[4][4] = WHITE;
+            
+            currentPlayer = BLACK;
+            gameHistory = []; // Reset move history
+            messageBoxElement.textContent = '';
+            renderBoard();
+            saveGameState(); // Save initial state
+        }
+
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            let blackScore = 0;
+            let whiteScore = 0;
+            const validMoves = getValidMoves(currentPlayer);
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    
+                    const pieceValue = board[r][c];
+                    if (pieceValue !== EMPTY) {
+                        const piece = document.createElement('div');
+                        piece.className = 'piece ' + (pieceValue === BLACK ? 'black' : 'white');
+                        cell.appendChild(piece);
+                        
+                        if (pieceValue === BLACK) blackScore++;
+                        else whiteScore++;
+                    } else if (showHints && validMoves.some(move => move.r === r && move.c === c)) {
+                        // Show hint for valid moves
+                        const hint = document.createElement('div');
+                        hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
+                        cell.appendChild(hint);
+                    }
+
+                    boardElement.appendChild(cell);
+                }
+            }
+            
+            updateScoresAndTurn(blackScore, whiteScore);
+        }
+
+        function updateScoresAndTurn(blackScore, whiteScore) {
+            blackScoreElement.textContent = blackScore;
+            whiteScoreElement.textContent = whiteScore;
+            
+            // Update breathing animation for current player
+            if (currentPlayer === BLACK) {
+                blackPlayerArea.classList.add('active');
+                whitePlayerArea.classList.remove('active');
+            } else {
+                whitePlayerArea.classList.add('active');
+                blackPlayerArea.classList.remove('active');
+            }
+        }
+
+        async function updateBoardAnimated(newPiecePos, piecesToFlip) {
+            // Clear all valid move hints to prevent overlap with new pieces
+            const allCells = boardElement.querySelectorAll('.cell');
+            allCells.forEach(cell => {
+                const existingHint = cell.querySelector('.valid-move-hint');
+                if (existingHint) {
+                    existingHint.remove();
+                }
+            });
+
+            // Place the new piece with scale animation
+            const newCell = boardElement.querySelector(`[data-r="${newPiecePos.r}"][data-c="${newPiecePos.c}"]`);
+            if (newCell) {
+                const piece = document.createElement('div');
+                piece.className = 'piece ' + (currentPlayer === BLACK ? 'black' : 'white');
+                newCell.appendChild(piece);
+            }
+
+            // Animate flipping pieces
+            const flipPromises = piecesToFlip.map(pos => {
+                return new Promise(resolve => {
+                    const cell = boardElement.querySelector(`[data-r="${pos.r}"][data-c="${pos.c}"]`);
+                    const piece = cell?.querySelector('.piece');
+                    if (piece) {
+                        piece.classList.add('flipping');
+                        
+                        // Change color at halfway point of animation
+                        setTimeout(() => {
+                            piece.className = 'piece flipping ' + (currentPlayer === BLACK ? 'black' : 'white');
+                        }, 200); // Half of flip-piece animation duration
+                        
+                        // Remove flipping class when animation completes
+                        setTimeout(() => {
+                            piece.classList.remove('flipping');
+                            resolve();
+                        }, 400); // Full flip-piece animation duration
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+
+            // Wait for all flip animations to complete
+            await Promise.all(flipPromises);
+        }
+
+        function updateScoresAndValidMoves() {
+            let blackScore = 0;
+            let whiteScore = 0;
+            const validMoves = getValidMoves(currentPlayer);
+
+            // Count scores
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (board[r][c] === BLACK) blackScore++;
+                    else if (board[r][c] === WHITE) whiteScore++;
+                }
+            }
+
+            // Update hints for valid moves
+            const allCells = boardElement.querySelectorAll('.cell');
+            allCells.forEach(cell => {
+                const r = parseInt(cell.dataset.r);
+                const c = parseInt(cell.dataset.c);
+                const existingHint = cell.querySelector('.valid-move-hint');
+                
+                // Remove existing hint
+                if (existingHint) {
+                    existingHint.remove();
+                }
+                
+                // Add hint if this is a valid move and hints are enabled
+                if (showHints && board[r][c] === EMPTY && validMoves.some(move => move.r === r && move.c === c)) {
+                    const hint = document.createElement('div');
+                    hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
+                    cell.appendChild(hint);
+                }
+            });
+
+            updateScoresAndTurn(blackScore, whiteScore);
+        }
+
+        function getPiecesToFlip(r, c, player) {
+            if (board[r][c] !== EMPTY) return [];
+
+            const opponent = player === BLACK ? WHITE : BLACK;
+            const piecesToFlip = [];
+
+            for (const dir of directions) {
+                let currentPieces = [];
+                let row = r + dir.r;
+                let col = c + dir.c;
+
+                // Check if the adjacent piece is an opponent's piece
+                if (row >= 0 && row < 8 && col >= 0 && col < 8 && board[row][col] === opponent) {
+                    currentPieces.push({ r: row, c: col });
+                    
+                    // Continue in this direction
+                    while (true) {
+                        row += dir.r;
+                        col += dir.c;
+                        
+                        if (row < 0 || row >= 8 || col < 0 || col >= 8 || board[row][col] === EMPTY) {
+                            currentPieces = []; // Invalid line, reset
+                            break;
+                        }
+                        
+                        if (board[row][col] === player) {
+                            // Found a bracketing piece, this is a valid line
+                            piecesToFlip.push(...currentPieces);
+                            break;
+                        }
+                        
+                        currentPieces.push({ r: row, c: col });
+                    }
+                }
+            }
+            return piecesToFlip;
+        }
+        
+        function getValidMoves(player) {
+            const moves = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (board[r][c] === EMPTY) {
+                        if (getPiecesToFlip(r, c, player).length > 0) {
+                            moves.push({ r, c });
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        async function handleCellClick(e) {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            
+            const r = parseInt(cell.dataset.r);
+            const c = parseInt(cell.dataset.c);
+            
+            const piecesToFlip = getPiecesToFlip(r, c, currentPlayer);
+            
+            if (piecesToFlip.length === 0) {
+                messageBoxElement.textContent = "Invalid Move!";
+                setTimeout(() => { if(messageBoxElement.textContent === "Invalid Move!") messageBoxElement.textContent = ''; }, 2000);
+                return;
+            }
+
+            // Record the move in history before making changes
+            const moveRecord = {
+                moveNumber: gameHistory.length + 1,
+                player: currentPlayer,
+                position: { r, c },
+                piecesFlipped: [...piecesToFlip], // Copy array
+                timestamp: Date.now(),
+                boardBefore: board.map(row => [...row]) // Deep copy of board before move
+            };
+
+            // Make the move
+            messageBoxElement.textContent = '';
+            board[r][c] = currentPlayer;
+            piecesToFlip.forEach(p => {
+                board[p.r][p.c] = currentPlayer;
+            });
+            
+            // Add board state after move to the record
+            moveRecord.boardAfter = board.map(row => [...row]);
+            gameHistory.push(moveRecord);
+            
+            // Save game state after each move
+            saveGameState();
+            
+            // Play placement sound
+            playPlacementSound();
+            
+            // Disable board during animations
+            boardElement.style.pointerEvents = 'none';
+            
+            // Use animated update instead of full board refresh
+            await updateBoardAnimated({ r, c }, piecesToFlip);
+            
+            switchTurn();
+        }
+
+        function switchTurn() {
+            currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+            
+            const validMovesForNextPlayer = getValidMoves(currentPlayer);
+            if (validMovesForNextPlayer.length > 0) {
+                 // Next player can move
+                updateScoresAndValidMoves();
+            } else {
+                // Next player must pass
+                messageBoxElement.textContent = `${currentPlayer === BLACK ? 'Black' : 'White'} has no moves and must pass.`;
+                currentPlayer = currentPlayer === BLACK ? WHITE : BLACK; // Switch back
+                
+                const validMovesForCurrentPlayer = getValidMoves(currentPlayer);
+                if (validMovesForCurrentPlayer.length > 0) {
+                     // Current player gets to go again
+                     updateScoresAndValidMoves();
+                } else {
+                     // Game over, neither player can move
+                     endGame();
+                     return;
+                }
+            }
+            
+            // Save game state after turn switch
+            saveGameState();
+            boardElement.style.pointerEvents = 'auto';
+        }
+
+        function endGame() {
+            let blackScore = 0;
+            let whiteScore = 0;
+            for(let r=0; r<8; r++){
+                for(let c=0; c<8; c++){
+                    if(board[r][c] === BLACK) blackScore++;
+                    if(board[r][c] === WHITE) whiteScore++;
+                }
+            }
+            
+            let winnerMessage;
+            if (blackScore > whiteScore) {
+                winnerMessage = `Game Over! Black wins ${blackScore} to ${whiteScore}.`;
+            } else if (whiteScore > blackScore) {
+                winnerMessage = `Game Over! White wins ${whiteScore} to ${blackScore}.`;
+            } else {
+                winnerMessage = `Game Over! It's a draw, ${blackScore} to ${whiteScore}.`;
+            }
+            
+            messageBoxElement.textContent = winnerMessage;
+            blackPlayerArea.classList.remove('active');
+            whitePlayerArea.classList.remove('active');
+            boardElement.style.pointerEvents = 'none';
+        }
+
+        // Theme initialization (system preference only)
+        function initializeTheme() {
+            // Check for saved theme preference or default to system preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        // Shimmer animation function
+        async function playShimmerAnimation() {
+            return new Promise((resolve) => {
+                // Create shimmer overlay
+                const shimmerOverlay = document.createElement('div');
+                shimmerOverlay.className = 'shimmer-overlay';
+                boardElement.appendChild(shimmerOverlay);
+                
+                // Create pieces for diagonal animation (top-left to bottom-right)
+                const totalDiagonals = 15; // Number of diagonal lines
+                const animationDuration = 600; // Duration for each piece in ms
+                const staggerDelay = 80; // Delay between diagonal lines
+                
+                let pieceCount = 0;
+                
+                // Create diagonal lines from top-left to bottom-right
+                for (let diagonal = 0; diagonal < totalDiagonals; diagonal++) {
+                    setTimeout(() => {
+                        // Calculate pieces for this diagonal line
+                        for (let i = 0; i <= Math.min(diagonal, 7, 14 - diagonal); i++) {
+                            const row = i;
+                            const col = diagonal - i;
+                            
+                            if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                                const piece = document.createElement('div');
+                                piece.className = 'shimmer-piece';
+                                
+                                // Position piece in the center of the cell
+                                const cellSize = 100 / 8; // Each cell is 12.5% of board
+                                piece.style.left = `${col * cellSize + cellSize / 2}%`;
+                                piece.style.top = `${row * cellSize + cellSize / 2}%`;
+                                
+                                // Animate piece with flipping effect
+                                piece.style.animation = `shimmer-flip ${animationDuration}ms ease-in-out`;
+                                
+                                shimmerOverlay.appendChild(piece);
+                                pieceCount++;
+                                
+                                // Remove piece after animation
+                                setTimeout(() => {
+                                    piece.remove();
+                                    pieceCount--;
+                                    
+                                    // When all pieces are done, remove overlay and resolve
+                                    if (pieceCount === 0) {
+                                        shimmerOverlay.remove();
+                                        resolve();
+                                    }
+                                }, animationDuration);
+                            }
+                        }
+                    }, diagonal * staggerDelay);
+                }
+            });
+        }
+
+        // Event Listeners
+        boardElement.addEventListener('click', handleCellClick);
+        newGameBtn.addEventListener('click', async () => {
+            // Show confirmation dialog
+            if (confirm('Are you sure you want to start a new game? This will reset the current game.')) {
+                boardElement.style.pointerEvents = 'none';
+                await playShimmerAnimation();
+                boardElement.style.pointerEvents = 'auto';
+                clearSavedGameState(); // Clear saved state before starting new game
+                initGame();
+            }
+        });
+        showHintsCheckbox.addEventListener('change', (e) => {
+            showHints = e.target.checked;
+            updateScoresAndValidMoves();
+        });
+
+        // Initialize theme and start game
+        window.onload = () => {
+            initializeTheme();
+            initAudio();
+            
+            // Try to load saved game state, if not available start new game
+            if (!loadGameState()) {
+                initGame();
+            } else {
+                // If we loaded a saved state, render the board
+                renderBoard();
+            }
+        };
+    </script>
+</body>
+</html>
+
