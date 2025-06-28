@@ -1,3 +1,6 @@
+import AudioManager from './AudioManager.js';
+const audioManager = new AudioManager();
+
 // Mobile elements
 const boardElement = document.getElementById('board');
 const blackScoreElement = document.getElementById('black-score');
@@ -68,88 +71,38 @@ const WHITE = 2;
 let board = [];
 let currentPlayer;
 let showHints = true;
-let audioContext;
 let gameHistory = []; // Store history of moves
 
 let currentHistoryIndex = -1; // Track current position in history (-1 means no moves)
 
-let soundEnabled = true; // Track sound state
-let audioBuffer = null; // Cached audio buffer for drop.mp3
 let noMovesPopupShown = false; // Track if popup is already shown for current turn
 
 
-// Initialize audio context for sounds
-function initAudio() {
-    try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        loadAudioBuffer(); // Load drop.mp3 once during initialization
-    } catch (e) {
-        console.warn('Web Audio API not supported');
-    }
-}
-
-// Load and cache the audio buffer once
-function loadAudioBuffer() {
-    if (!audioContext) return;
-    
-    try {
-        const request = new XMLHttpRequest();
-        request.open('GET', 'drop.mp3', true);
-        request.responseType = 'arraybuffer';
-        request.addEventListener('load', function() {
-            audioContext.decodeAudioData(request.response, function(buffer) {
-                audioBuffer = buffer;
-                console.log('Audio buffer loaded successfully');
-            }, function(error) {
-                console.warn('Could not decode audio data:', error);
-            });
-        });
-        request.addEventListener('error', function() {
-            console.warn('Could not load audio file');
-        });
-        request.send();
-    } catch (e) {
-        console.warn('Could not load audio buffer:', e);
-    }
-}
-
 // Load sound preference from localStorage
 function loadSoundPreference() {
-    try {
-        const savedSoundEnabled = localStorage.getItem('othello-sound-enabled');
-        if (savedSoundEnabled !== null) {
-            soundEnabled = JSON.parse(savedSoundEnabled);
-        }
-    } catch (e) {
-        console.warn('Failed to load sound preference:', e);
-    }
-    updateSoundIcon();
+    audioManager.loadSoundPreference();
 }
 
 // Save sound preference to localStorage
 function saveSoundPreference() {
-    localStorage.setItem('othello-sound-enabled', JSON.stringify(soundEnabled));
+    audioManager.saveSoundPreference();
 }
 
 // Update sound icon based on current state
 function updateSoundIcon() {
+    const elements = getCurrentElements();
+    const soundEnabled = audioManager.soundEnabled;
     const icon = soundEnabled ? '🔊' : '🔇';
     const title = soundEnabled ? 'Disable Sound' : 'Enable Sound';
-    
-    if (soundIcon) {
-        soundIcon.textContent = icon;
-        soundToggleBtn.title = title;
-    }
-    if (soundIconDesktop) {
-        soundIconDesktop.textContent = icon;
-        soundToggleBtnDesktop.title = title;
+    if (elements.soundIcon) {
+        elements.soundIcon.textContent = icon;
+        elements.soundIcon.title = title;
     }
 }
 
 // Toggle sound on/off
 function toggleSound() {
-    soundEnabled = !soundEnabled;
-    saveSoundPreference();
+    audioManager.toggleSound();
     updateSoundIcon();
 }
 
@@ -167,6 +120,28 @@ function toggleFullscreen() {
     }
 }
 
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    }
+}
+
+// Play placement sound
+function playPlacementSound() {
+    audioManager.playPlacementSound();
+}
+
+// Play reverse sound for undo
+function playUndoSound() {
+    audioManager.playUndoSound();
+}
+
 function enterFullscreen() {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
@@ -177,18 +152,6 @@ function enterFullscreen() {
         elem.mozRequestFullScreen();
     } else if (elem.msRequestFullscreen) {
         elem.msRequestFullscreen();
-    }
-}
-
-function exitFullscreen() {
-    if (document.exitFullscreen) {
-        document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
     }
 }
 
@@ -246,74 +209,6 @@ function loadGameState() {
 // Clear saved game state
 function clearSavedGameState() {
     localStorage.removeItem('othello-game-state');
-}
-
-// Play placement sound
-function playPlacementSound() {
-    if (!soundEnabled) return; // Exit early if sound is disabled
-    if (!audioContext || !audioBuffer) return; // Exit if no audio context or buffer available
-    
-    try {
-        // Create a new buffer source from cached buffer
-        const source = audioContext.createBufferSource();
-        const gainNode = audioContext.createGain();
-        
-        // Set volume
-        gainNode.gain.value = 0.5;
-        
-        // Connect the audio graph
-        source.buffer = audioBuffer;
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Play the sound
-        source.start();
-    } catch (e) {
-        console.warn('Could not play sound:', e);
-    }
-}
-
-// Play reverse sound for undo
-function playUndoSound() {
-    if (!soundEnabled) return; // Exit early if sound is disabled
-    if (!audioContext || !audioBuffer) return; // Exit if no audio context or buffer available
-    
-    try {
-        // Create a copy of the audio buffer for reversing
-        const reversedBuffer = audioContext.createBuffer(
-            audioBuffer.numberOfChannels, 
-            audioBuffer.length, 
-            audioBuffer.sampleRate
-        );
-        
-        // Copy and reverse the audio data for each channel
-        for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-            const originalData = audioBuffer.getChannelData(channel);
-            const reversedData = reversedBuffer.getChannelData(channel);
-            
-            // Copy data in reverse order
-            for (let i = 0; i < originalData.length; i++) {
-                reversedData[i] = originalData[originalData.length - 1 - i];
-            }
-        }
-        
-        // Create a new buffer source
-        const source = audioContext.createBufferSource();
-        const gainNode = audioContext.createGain();
-        
-        // Set lower volume for undo
-        gainNode.gain.value = 0.3;
-        
-        // Connect the audio graph
-        source.buffer = reversedBuffer;
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Play the reversed audio
-        source.start();
-    } catch (e) {
-        console.warn('Could not play undo sound:', e);
-    }
 }
 
 // Update undo/redo button states
@@ -1172,9 +1067,9 @@ function setupEventListeners() {
 // Initialize theme and start game
 window.onload = () => {
     initializeTheme();
-    initAudio();
-    loadSoundPreference(); // Load sound preference from localStorage
-    setupEventListeners(); // Setup all event listeners
+    audioManager.init();
+    audioManager.loadSoundPreference();
+    setupEventListeners();
     
     // Try to load saved game state, if not available start new game
     if (!loadGameState()) {
@@ -1189,4 +1084,5 @@ window.onload = () => {
     // Update checkboxes to reflect loaded showHints preference
     if (showHintsCheckbox) showHintsCheckbox.checked = showHints;
     if (showHintsCheckboxDesktop) showHintsCheckboxDesktop.checked = showHints;
+    updateSoundIcon();
 };
