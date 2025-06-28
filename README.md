@@ -25,6 +25,7 @@
 - ↶↷ **Undo/Redo** - Full move history with undo and redo functionality
 - 💾 **Local Storage** - Automatic game state saving, sound preferences, and settings persistence
 - 🔊 **Sound Effects** - Audio feedback for piece placement with toggle control
+- 📱 **Fullscreen Mode** - Mobile fullscreen toggle for immersive gameplay experience
 
 ## 🎯 How to Play
 
@@ -48,6 +49,7 @@ Have the majority of your colored pieces on the board when the game ends.
 - **Show valid moves** checkbox to toggle move hints
 - **Undo** (↶) and **Redo** (↷) buttons to navigate move history
 - **Sound toggle** (🔊/🔇) button to enable/disable audio effects
+- **Fullscreen toggle** (📱/🔳) button for mobile immersive experience
 
 ## 🛠️ Technology Stack
 

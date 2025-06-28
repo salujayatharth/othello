@@ -333,6 +333,9 @@
         <div class="flex justify-between items-center mb-1 w-full max-w-2xl">
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Othello</h1>
             <div class="flex items-center space-x-2">
+                <button id="fullscreen-toggle-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Fullscreen">
+                    <span id="fullscreen-icon">📱</span>
+                </button>
                 <button id="sound-toggle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Sound">
                     <span id="sound-icon">🔊</span>
                 </button>
@@ -502,6 +505,8 @@
         const redoBtn = document.getElementById('redo-btn');
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
         const soundIcon = document.getElementById('sound-icon');
+        const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-btn');
+        const fullscreenIcon = document.getElementById('fullscreen-icon');
 
         // Desktop elements
         const boardElementDesktop = document.getElementById('board-desktop');
@@ -638,6 +643,62 @@
             soundEnabled = !soundEnabled;
             saveSoundPreference();
             updateSoundIcon();
+        }
+
+        // Fullscreen functionality
+        function isFullscreen() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || 
+                     document.mozFullScreenElement || document.msFullscreenElement);
+        }
+
+        function toggleFullscreen() {
+            if (isFullscreen()) {
+                exitFullscreen();
+            } else {
+                enterFullscreen();
+            }
+        }
+
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        function updateFullscreenIcon() {
+            const icon = isFullscreen() ? '🔳' : '📱';
+            const title = isFullscreen() ? 'Exit Fullscreen' : 'Enter Fullscreen';
+            
+            if (fullscreenIcon) {
+                fullscreenIcon.textContent = icon;
+            }
+            if (fullscreenToggleBtn) {
+                fullscreenToggleBtn.title = title;
+            }
+        }
+
+        // Listen for fullscreen changes to update the icon
+        function handleFullscreenChange() {
+            updateFullscreenIcon();
         }
 
         // Save game state to localStorage
@@ -1503,6 +1564,15 @@
             // Sound toggle button handlers
             if (soundToggleBtn) soundToggleBtn.addEventListener('click', toggleSound);
             if (soundToggleBtnDesktop) soundToggleBtnDesktop.addEventListener('click', toggleSound);
+            
+            // Fullscreen toggle button handler
+            if (fullscreenToggleBtn) fullscreenToggleBtn.addEventListener('click', toggleFullscreen);
+            
+            // Listen for fullscreen changes
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('msfullscreenchange', handleFullscreenChange);
             
             // No moves popup handlers
             if (popupOkBtn) popupOkBtn.addEventListener('click', hideNoMovesPopup);
