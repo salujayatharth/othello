@@ -1285,11 +1285,11 @@
             currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
 
             const elements = getCurrentElements();
-            noMovesPopupShown = false; // Reset popup flag for new turn
             
             const validMovesForNextPlayer = getValidMoves(currentPlayer);
             if (validMovesForNextPlayer.length > 0) {
-                 // Next player can move
+                 // Next player can move - reset popup flag for new turn
+                noMovesPopupShown = false;
                 updateScoresAndValidMoves();
                 // Save game state and re-enable board
                 saveGameState();
@@ -1496,10 +1496,8 @@
             setTimeout(() => {
                 noMovesPopup.classList.add('hidden');
                 // Re-enable board interaction
-
                 elements.board.style.pointerEvents = 'auto';
-                // Reset popup flag when popup is hidden and turn continues
-                noMovesPopupShown = false;
+                // Don't reset popup flag - let switchTurn handle it when appropriate
             }, 300); // Match transition duration
         }
 
