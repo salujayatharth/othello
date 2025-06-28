@@ -21,8 +21,8 @@
             border-radius: 8px;
             padding: 8px;
             aspect-ratio: 1 / 1;
-            width: min(95vw, 85vh);
-            height: min(95vw, 85vh);
+            width: min(90vw, 80vh, 500px);
+            height: min(90vw, 80vh, 500px);
             margin: 0 auto;
         }
         .cell {
@@ -174,12 +174,12 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen max-h-screen overflow-hidden p-4">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
 
     <div class="w-full max-w-4xl mx-auto flex flex-col items-center h-full justify-center">
-        <div class="flex justify-between items-center mb-1 w-full max-w-2xl">
+        <div class="flex justify-between items-center mb-1 w-full max-w-4xl">
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Othello</h1>
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-1 sm:space-x-2">
                 <button id="sound-toggle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Sound">
                     <span id="sound-icon">🔊</span>
                 </button>
@@ -221,7 +221,7 @@
         </div>
 
         <!-- Undo/Redo Controls at Bottom -->
-        <div class="mt-4 flex justify-center items-center space-x-4">
+        <div class="mt-4 flex justify-center items-center space-x-2 sm:space-x-4">
             <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
                 ↶ Undo
             </button>
