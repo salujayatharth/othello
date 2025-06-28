@@ -98,6 +98,22 @@
         .valid-move-hint.show {
             opacity: 0.3;
         }
+        
+        /* No Moves Popup Animations */
+        #no-moves-popup {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #no-moves-popup.show {
+            opacity: 1;
+        }
+        #no-moves-popup .relative {
+            transform: scale(0.8);
+            transition: transform 0.3s ease-out;
+        }
+        #no-moves-popup.show .relative {
+            transform: scale(1);
+        }
+        
         @keyframes place-piece {
             from { transform: scale(0); }
             to { transform: scale(1); }
@@ -237,6 +253,40 @@
         <!-- Game Board -->
         <div id="board" class="board shadow-2xl flex-shrink-0 mb-2"></div>
 
+        <!-- No Moves Popup Modal -->
+        <div id="no-moves-popup" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+            
+            <!-- Popup content -->
+            <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-4 max-w-md w-full border-4 border-gray-300 dark:border-gray-600">
+                <!-- Top side (normal orientation) -->
+                <div id="popup-top" class="text-center">
+                    <div class="flex items-center justify-center space-x-3 mb-4">
+                        <div id="popup-player-piece-top" class="w-8 h-8 rounded-full"></div>
+                        <h2 id="popup-title-top" class="text-xl font-bold text-gray-800 dark:text-white"></h2>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300 mb-6">has no moves and must pass.</p>
+                </div>
+                
+                <!-- OK Button -->
+                <div class="flex justify-center">
+                    <button id="popup-ok-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        OK
+                    </button>
+                </div>
+                
+                <!-- Bottom side (mirrored orientation) -->
+                <div id="popup-bottom" class="text-center transform rotate-180 mt-6">
+                    <div class="flex items-center justify-center space-x-3 mb-4">
+                        <div id="popup-player-piece-bottom" class="w-8 h-8 rounded-full"></div>
+                        <h2 id="popup-title-bottom" class="text-xl font-bold text-gray-800 dark:text-white"></h2>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300 mb-6">has no moves and must pass.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Black Player (Player 2) - Bottom Side -->
         <div id="black-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mt-1 transition-all duration-1000">
             <div class="flex items-center justify-center space-x-2">
@@ -280,6 +330,14 @@
 
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
         const soundIcon = document.getElementById('sound-icon');
+
+        // No moves popup elements
+        const noMovesPopup = document.getElementById('no-moves-popup');
+        const popupOkBtn = document.getElementById('popup-ok-btn');
+        const popupTitleTop = document.getElementById('popup-title-top');
+        const popupTitleBottom = document.getElementById('popup-title-bottom');
+        const popupPlayerPieceTop = document.getElementById('popup-player-piece-top');
+        const popupPlayerPieceBottom = document.getElementById('popup-player-piece-bottom');
 
         const EMPTY = 0;
         const BLACK = 1;
@@ -902,9 +960,12 @@
             if (validMovesForNextPlayer.length > 0) {
                  // Next player can move
                 updateScoresAndValidMoves();
+                // Save game state and re-enable board
+                saveGameState();
+                boardElement.style.pointerEvents = 'auto';
             } else {
-                // Next player must pass
-                messageBoxElement.textContent = `${currentPlayer === BLACK ? 'Black' : 'White'} has no moves and must pass.`;
+                // Next player must pass - show popup instead of messageBox
+                showNoMovesPopup(currentPlayer);
                 currentPlayer = currentPlayer === BLACK ? WHITE : BLACK; // Switch back
                 
                 const validMovesForCurrentPlayer = getValidMoves(currentPlayer);
@@ -916,11 +977,9 @@
                      endGame();
                      return;
                 }
+                // Save game state but don't re-enable board yet (popup will handle it)
+                saveGameState();
             }
-            
-            // Save game state after turn switch
-            saveGameState();
-            boardElement.style.pointerEvents = 'auto';
         }
 
         function endGame() {
@@ -1061,6 +1120,39 @@
             });
         }
 
+        // No Moves Popup Functions
+        function showNoMovesPopup(player) {
+            const playerName = player === BLACK ? 'Black' : 'White';
+            const playerColor = player === BLACK ? 'bg-gray-800 dark:bg-gray-700' : 'bg-white border border-gray-300';
+            
+            // Set content for both orientations
+            popupTitleTop.textContent = playerName;
+            popupTitleBottom.textContent = playerName;
+            
+            // Set player piece colors
+            popupPlayerPieceTop.className = `w-8 h-8 rounded-full ${playerColor}`;
+            popupPlayerPieceBottom.className = `w-8 h-8 rounded-full ${playerColor}`;
+            
+            // Show popup with animation
+            noMovesPopup.classList.remove('hidden');
+            // Force reflow to ensure the transition works
+            noMovesPopup.offsetHeight;
+            noMovesPopup.classList.add('show');
+            
+            // Disable board interaction
+            boardElement.style.pointerEvents = 'none';
+        }
+
+        function hideNoMovesPopup() {
+            noMovesPopup.classList.remove('show');
+            
+            setTimeout(() => {
+                noMovesPopup.classList.add('hidden');
+                // Re-enable board interaction
+                boardElement.style.pointerEvents = 'auto';
+            }, 300); // Match transition duration
+        }
+
         // Event Listeners
         boardElement.addEventListener('click', handleCellClick);
         newGameBtn.addEventListener('click', async () => {
@@ -1081,6 +1173,16 @@
             saveGameState(); // Save state when hints preference changes
         });
         soundToggleBtn.addEventListener('click', toggleSound);
+        
+        // No moves popup OK button event listener
+        popupOkBtn.addEventListener('click', hideNoMovesPopup);
+        
+        // Close popup on overlay click
+        noMovesPopup.addEventListener('click', (e) => {
+            if (e.target === noMovesPopup) {
+                hideNoMovesPopup();
+            }
+        });
 
         // Initialize theme and start game
         window.onload = () => {
