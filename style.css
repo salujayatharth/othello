@@ -1,0 +1,314 @@
+body {
+    font-family: 'Inter', sans-serif;
+    /* Safe area handling for iOS devices */
+    padding-top: env(safe-area-inset-top, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+}
+
+/* Prevent text selection on interactive elements */
+button, label, .cell, .piece {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 4px;
+    background-color: #166534; /* Darker Green */
+    border: 8px solid #15803d; /* Green */
+    border-radius: 8px;
+    padding: 8px;
+    aspect-ratio: 1 / 1;
+    width: min(95vw, 85vh);
+    height: min(95vw, 85vh);
+    margin: 0 auto;
+}
+.cell {
+    background-color: #15803d; /* Green */
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    aspect-ratio: 1 / 1;
+    transition: background-color 0.2s ease;
+}
+.cell:hover {
+    background-color: #16a34a; /* Lighter Green */
+}
+.piece {
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: place-piece 0.3s forwards;
+}
+.piece.gameplay {
+    transform: scale(1);
+    animation: none;
+}
+.black {
+    background: radial-gradient(circle at 30% 30%, #4b5563, #374151, #1f2937, #111827);
+    border: 4px solid #6b7280;
+    box-shadow: 
+        inset 0 0 8px rgba(0, 0, 0, 0.4),
+        inset 0 0 12px rgba(0, 0, 0, 0.3),
+        inset 0 0 5px rgba(0, 0, 0, 0.5),
+        inset 0 0 3px rgba(255, 255, 255, 0.08),
+        0 3px 6px rgba(0, 0, 0, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.white {
+    background: radial-gradient(circle at 30% 30%, #ffffff, #f9fafb, #f3f4f6, #e5e7eb);
+    border: 4px solid #d1d5db;
+    box-shadow: 
+        inset 0 0 8px rgba(0, 0, 0, 0.2),
+        inset 0 0 12px rgba(0, 0, 0, 0.15),
+        inset 0 0 5px rgba(0, 0, 0, 0.2),
+        inset 0 0 3px rgba(255, 255, 255, 0.6),
+        0 3px 6px rgba(0, 0, 0, 0.2),
+        0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.valid-move-hint {
+    width: 30%;
+    height: 30%;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.valid-move-hint.show {
+    opacity: 0.3;
+}
+
+/* No Moves Popup Animations */
+#no-moves-popup {
+    transition: opacity 0.3s ease-in-out;
+}
+#no-moves-popup.show {
+    opacity: 1;
+}
+#no-moves-popup .relative {
+    transform: scale(0.8);
+    transition: transform 0.3s ease-out;
+}
+#no-moves-popup.show .relative {
+    transform: scale(1);
+}
+
+@keyframes place-piece {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+@keyframes flip-piece {
+    0% { transform: scale(1) rotateY(0deg); }
+    50% { transform: scale(0.8) rotateY(90deg); }
+    100% { transform: scale(1) rotateY(180deg); }
+}
+.piece.flipping {
+    animation: flip-piece 0.4s ease-in-out;
+}
+
+/* Fast animations for undo/redo */
+@keyframes fast-flip-piece {
+    0% { transform: scale(1) rotateY(0deg); }
+    50% { transform: scale(0.8) rotateY(90deg); }
+    100% { transform: scale(1) rotateY(180deg); }
+}
+.piece.fast-flipping {
+    animation: fast-flip-piece 0.15s ease-in-out;
+}
+@keyframes fast-place-piece {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+.piece.fast-placing {
+    animation: fast-place-piece 0.1s ease-out;
+}
+
+@keyframes breathe {
+    0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    50% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 20px rgba(255, 255, 255, 0.6); }
+}
+.player-area.active {
+    animation: breathe 2s ease-in-out infinite;
+}
+
+/* Flip white player area so it's readable from the opposite side */
+#white-player-area {
+    transform: rotate(180deg);
+}
+
+/* Shimmer animation for board clearing */
+.shimmer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.shimmer-piece {
+    position: absolute;
+    /* Size will be set dynamically to match cell size */
+    border-radius: 50%;
+    opacity: 0;
+    background-color: #1f2937; /* Start as black piece */
+    box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+    transform: translateX(-50%) translateY(-50%);
+}
+
+@keyframes shimmer-flip {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50%) scale(0.5) rotateY(0deg);
+        background-color: #1f2937; /* Black */
+        box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    25% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-50%) scale(1) rotateY(90deg);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-50%) scale(1) rotateY(180deg);
+        background-color: #f3f4f6; /* White */
+        box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    75% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-50%) scale(1) rotateY(270deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50%) scale(0.5) rotateY(360deg);
+        background-color: #1f2937; /* Back to black */
+        box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+}
+
+.board {
+    position: relative;
+}
+
+/* Desktop layout - side controls */
+@media screen and (min-width: 1024px) {
+    .game-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3rem;
+        max-width: none;
+    }
+    
+    .game-board-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .side-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        min-width: 200px;
+    }
+    
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .control-group {
+        background: #1f2937;
+    }
+    
+    .control-group h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0;
+        text-align: center;
+    }
+    
+    .dark .control-group h3 {
+        color: #d1d5db;
+    }
+    
+    /* Hide mobile-style player areas in desktop */
+    .desktop-hidden {
+        display: none;
+    }
+    
+    /* Desktop player areas in side panel */
+    .desktop-player-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .dark .desktop-player-area {
+        background: #1f2937;
+    }
+    
+    .desktop-player-area.active {
+        box-shadow: 0 0 0 2px #3b82f6, 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .desktop-player-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .desktop-score {
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+    }
+}
+
+/* Enhanced mobile touch handling */
+@media screen and (max-width: 768px) {
+    body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-text-size-adjust: none;
+        -ms-content-zooming: none;
+        touch-action: manipulation;
+    }
+    
+    /* Hide desktop controls on mobile */
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* Tablet and mobile - hide desktop controls */
+@media screen and (max-width: 1023px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
