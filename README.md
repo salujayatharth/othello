@@ -20,6 +20,7 @@
 - ⚡ **Smooth Animations** - Fluid piece placement and flipping animations
 - 🎨 **Modern UI** - Clean, professional interface built with Tailwind CSS
 - 🔄 **New Game** - Quick restart functionality
+- 🔁 **Reset Game** - Quickly undo all moves back to initial state without animation
 - 📊 **Live Score Tracking** - Real-time score updates for both players
 - 🎪 **Turn Indicators** - Clear visual indication of current player with breathing animations
 - ↶↷ **Undo/Redo** - Full move history with undo and redo functionality
@@ -46,6 +47,7 @@ Have the majority of your colored pieces on the board when the game ends.
 ### Controls
 - **Click** any highlighted cell to place your piece
 - **New Game** button to restart
+- **Reset** button to quickly undo all moves back to initial state
 - **Show valid moves** checkbox to toggle move hints
 - **Undo** (↶) and **Redo** (↷) buttons to navigate move history
 - **Sound toggle** (🔊/🔇) button to enable/disable audio effects
