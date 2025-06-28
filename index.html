@@ -353,6 +353,7 @@
 
         let soundEnabled = true; // Track sound state
         let audioBuffer = null; // Cached audio buffer for drop.mp3
+        let noMovesPopupShown = false; // Track if popup is already shown for current turn
 
 
         // Initialize audio context for sounds
@@ -429,6 +430,7 @@
                 gameHistory: [...gameHistory], // Deep copy
                 currentHistoryIndex: currentHistoryIndex,
                 showHints: showHints, // Save hints preference
+                noMovesPopupShown: noMovesPopupShown, // Save popup state
                 timestamp: Date.now()
             };
             localStorage.setItem('othello-game-state', JSON.stringify(gameState));
@@ -445,6 +447,7 @@
                     gameHistory = gameState.gameHistory || [];
                     currentHistoryIndex = gameState.currentHistoryIndex !== undefined ? gameState.currentHistoryIndex : -1;
                     showHints = gameState.showHints !== undefined ? gameState.showHints : true; // Load hints preference with fallback
+                    noMovesPopupShown = gameState.noMovesPopupShown || false; // Load popup state with fallback
                     return true;
                 }
             } catch (e) {
@@ -555,6 +558,9 @@
             // Move back in history
             currentHistoryIndex--;
             
+            // Reset popup flag since game state changed
+            noMovesPopupShown = false;
+            
             // Play undo sound
             playUndoSound();
             
@@ -584,6 +590,9 @@
             
             // Switch to the next player (opposite of the move player)
             currentPlayer = moveToRedo.player === BLACK ? WHITE : BLACK;
+            
+            // Reset popup flag since game state changed
+            noMovesPopupShown = false;
             
             // No sound for redo as per requirements
             
@@ -616,6 +625,7 @@
             currentPlayer = BLACK;
             gameHistory = []; // Reset move history
             currentHistoryIndex = -1; // Reset history index
+            noMovesPopupShown = false; // Reset popup flag
             messageBoxElement.textContent = '';
             renderBoard();
             updateUndoRedoButtons(); // Update button states
@@ -955,6 +965,7 @@
 
         function switchTurn() {
             currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+            noMovesPopupShown = false; // Reset popup flag for new turn
             
             const validMovesForNextPlayer = getValidMoves(currentPlayer);
             if (validMovesForNextPlayer.length > 0) {
@@ -964,16 +975,20 @@
                 saveGameState();
                 boardElement.style.pointerEvents = 'auto';
             } else {
-                // Next player must pass - show popup instead of messageBox
-                showNoMovesPopup(currentPlayer);
+                // Next player must pass - check if game should end first
                 currentPlayer = currentPlayer === BLACK ? WHITE : BLACK; // Switch back
                 
                 const validMovesForCurrentPlayer = getValidMoves(currentPlayer);
                 if (validMovesForCurrentPlayer.length > 0) {
-                     // Current player gets to go again
+                     // Current player gets to go again - show popup only once
+                     if (!noMovesPopupShown) {
+                         const playerWhoMustPass = currentPlayer === BLACK ? WHITE : BLACK;
+                         showNoMovesPopup(playerWhoMustPass);
+                         noMovesPopupShown = true;
+                     }
                      updateScoresAndValidMoves();
                 } else {
-                     // Game over, neither player can move
+                     // Game over, neither player can move - don't show popup
                      endGame();
                      return;
                 }
@@ -1150,6 +1165,8 @@
                 noMovesPopup.classList.add('hidden');
                 // Re-enable board interaction
                 boardElement.style.pointerEvents = 'auto';
+                // Reset popup flag when popup is hidden and turn continues
+                noMovesPopupShown = false;
             }, 300); // Match transition duration
         }
 
@@ -1194,9 +1211,10 @@
             if (!loadGameState()) {
                 initGame();
             } else {
-                // If we loaded a saved state, render the board and update buttons
+                // If we loaded a saved state, render the board and update buttons and scores
                 renderBoard();
                 updateUndoRedoButtons();
+                updateScoresAndValidMoves(); // Ensure scores are updated correctly
             }
             
             // Update checkbox to reflect loaded showHints preference
