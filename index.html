@@ -764,9 +764,10 @@
             
             console.log('Undoing move at index:', currentHistoryIndex);
             const moveToUndo = gameHistory[currentHistoryIndex];
+            const elements = getCurrentElements();
             
             // Disable board during animation
-            boardElement.style.pointerEvents = 'none';
+            elements.board.style.pointerEvents = 'none';
             
             // Restore board state before the move
             board = moveToUndo.boardBefore.map(row => [...row]);
@@ -786,15 +787,17 @@
             saveGameState();
             
             // Re-enable board after animation
-            boardElement.style.pointerEvents = 'auto';
+            elements.board.style.pointerEvents = 'auto';
         }
 
         // Redo next move
         async function redoMove() {
             if (currentHistoryIndex >= gameHistory.length - 1) return;
             
+            const elements = getCurrentElements();
+            
             // Disable board during animation
-            boardElement.style.pointerEvents = 'none';
+            elements.board.style.pointerEvents = 'none';
             
             // Move forward in history
             currentHistoryIndex++;
@@ -815,7 +818,7 @@
             saveGameState();
             
             // Re-enable board after animation
-            boardElement.style.pointerEvents = 'auto';
+            elements.board.style.pointerEvents = 'auto';
         }
 
         // All 8 directions to check for valid moves
@@ -965,13 +968,22 @@
 
         // Fast animated rendering for undo/redo operations
         async function renderBoardFastAnimated() {
-            const allCells = boardElement.querySelectorAll('.cell');
+            const elements = getCurrentElements();
             const animationPromises = [];
+            
+            // First, clear all existing hints to ensure clean state
+            const allCells = elements.board.querySelectorAll('.cell');
+            allCells.forEach(cell => {
+                const existingHint = cell.querySelector('.valid-move-hint');
+                if (existingHint) {
+                    existingHint.remove();
+                }
+            });
             
             // First pass: remove invalid pieces and add new pieces with fast animations
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
-                    const cell = boardElement.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+                    const cell = elements.board.querySelector(`[data-r="${r}"][data-c="${c}"]`);
                     if (!cell) continue;
                     
                     const existingPiece = cell.querySelector('.piece');
@@ -982,7 +994,7 @@
                         if (existingPiece) {
                             existingPiece.remove();
                         }
-                        // Clear any hints
+                        // Clear any hints (redundant but safe)
                         const existingHint = cell.querySelector('.valid-move-hint');
                         if (existingHint) existingHint.remove();
                     } else {
