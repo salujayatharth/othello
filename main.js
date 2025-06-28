@@ -1083,65 +1083,82 @@ function hideNoMovesPopup() {
 
 // Event Listeners
 function setupEventListeners() {
-    // Helper to add click event to multiple elements
-    function addClickListeners(elements, handler) {
-        elements.forEach(el => { if (el) el.addEventListener('click', handler); });
-    }
-
-    // Helper for new game button logic
-    async function handleNewGameClick() {
-        if (confirm('Are you sure you want to start a new game? This will reset the current game.')) {
-            const elements = getCurrentElements();
-            elements.board.style.pointerEvents = 'none';
-            await playShimmerAnimation();
-            elements.board.style.pointerEvents = 'auto';
-            clearSavedGameState();
-            initGame();
-        }
-    }
-
-    // Helper for show hints checkbox logic
-    function handleShowHintsChange(e, otherCheckbox) {
-        showHints = e.target.checked;
-        if (otherCheckbox) otherCheckbox.checked = showHints;
-        updateScoresAndValidMoves();
-        saveGameState();
-    }
-
     // Board click handlers for both mobile and desktop
-    addClickListeners([boardElement, boardElementDesktop], handleCellClick);
-
+    if (boardElement) boardElement.addEventListener('click', handleCellClick);
+    if (boardElementDesktop) boardElementDesktop.addEventListener('click', handleCellClick);
+    
     // New game button handlers
-    addClickListeners([newGameBtn, newGameBtnDesktop], handleNewGameClick);
-
+    if (newGameBtn) {
+        newGameBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to start a new game? This will reset the current game.')) {
+                const elements = getCurrentElements();
+                elements.board.style.pointerEvents = 'none';
+                await playShimmerAnimation();
+                elements.board.style.pointerEvents = 'auto';
+                clearSavedGameState();
+                initGame();
+            }
+        });
+    }
+    if (newGameBtnDesktop) {
+        newGameBtnDesktop.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to start a new game? This will reset the current game.')) {
+                const elements = getCurrentElements();
+                elements.board.style.pointerEvents = 'none';
+                await playShimmerAnimation();
+                elements.board.style.pointerEvents = 'auto';
+                clearSavedGameState();
+                initGame();
+            }
+        });
+    }
+    
     // Undo/Redo button handlers
-    addClickListeners([undoBtn, undoBtnDesktop], undoMove);
-    addClickListeners([redoBtn, redoBtnDesktop], redoMove);
-
+    if (undoBtn) undoBtn.addEventListener('click', undoMove);
+    if (undoBtnDesktop) undoBtnDesktop.addEventListener('click', undoMove);
+    if (redoBtn) redoBtn.addEventListener('click', redoMove);
+    if (redoBtnDesktop) redoBtnDesktop.addEventListener('click', redoMove);
+    
     // Reset button handlers
-    addClickListeners([resetBtn, resetBtnDesktop], resetGame);
-
+    if (resetBtn) resetBtn.addEventListener('click', resetGame);
+    if (resetBtnDesktop) resetBtnDesktop.addEventListener('click', resetGame);
+    
     // Show hints checkbox handlers
     if (showHintsCheckbox) {
-        showHintsCheckbox.addEventListener('change', (e) => handleShowHintsChange(e, showHintsCheckboxDesktop));
+        showHintsCheckbox.addEventListener('change', (e) => {
+            showHints = e.target.checked;
+            // Sync both checkboxes
+            if (showHintsCheckboxDesktop) showHintsCheckboxDesktop.checked = showHints;
+            updateScoresAndValidMoves();
+            saveGameState();
+        });
     }
     if (showHintsCheckboxDesktop) {
-        showHintsCheckboxDesktop.addEventListener('change', (e) => handleShowHintsChange(e, showHintsCheckbox));
+        showHintsCheckboxDesktop.addEventListener('change', (e) => {
+            showHints = e.target.checked;
+            // Sync both checkboxes
+            if (showHintsCheckbox) showHintsCheckbox.checked = showHints;
+            updateScoresAndValidMoves();
+            saveGameState();
+        });
     }
-
+    
     // Sound toggle button handlers
-    addClickListeners([soundToggleBtn, soundToggleBtnDesktop], toggleSound);
-
+    if (soundToggleBtn) soundToggleBtn.addEventListener('click', toggleSound);
+    if (soundToggleBtnDesktop) soundToggleBtnDesktop.addEventListener('click', toggleSound);
+    
     // Fullscreen toggle button handler
     if (fullscreenToggleBtn) fullscreenToggleBtn.addEventListener('click', toggleFullscreen);
-
+    
     // Listen for fullscreen changes
-    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'msfullscreenchange']
-        .forEach(event => document.addEventListener(event, handleFullscreenChange));
-
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    
     // No moves popup handlers
     if (popupOkBtn) popupOkBtn.addEventListener('click', hideNoMovesPopup);
-
+    
     // Close popup on overlay click
     if (noMovesPopup) {
         noMovesPopup.addEventListener('click', (e) => {
