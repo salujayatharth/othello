@@ -468,37 +468,48 @@ function renderBoard() {
     let whiteScore = 0;
     const validMoves = getValidMoves(currentPlayer);
 
+    function createCell(r, c) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+
+        const pieceValue = board[r][c];
+        if (pieceValue !== EMPTY) {
+            addPieceToCell(cell, pieceValue);
+            if (pieceValue === BLACK) blackScore++;
+            else if (pieceValue === WHITE) whiteScore++;
+        } else if (showHints && isValidMove(validMoves, r, c)) {
+            addHintToCell(cell);
+        }
+        return cell;
+    }
+
+    function addPieceToCell(cell, pieceValue) {
+        const piece = document.createElement('div');
+        piece.className = 'piece ' + (pieceValue === BLACK ? 'black' : 'white');
+        cell.appendChild(piece);
+    }
+
+    function isValidMove(validMoves, r, c) {
+        return validMoves.some(move => move.r === r && move.c === c);
+    }
+
+    function addHintToCell(cell) {
+        const hint = document.createElement('div');
+        hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
+        cell.appendChild(hint);
+        setTimeout(() => {
+            hint.classList.add('show');
+        }, 50);
+    }
+
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.dataset.r = r;
-            cell.dataset.c = c;
-            
-            const pieceValue = board[r][c];
-            if (pieceValue !== EMPTY) {
-                const piece = document.createElement('div');
-                piece.className = 'piece ' + (pieceValue === BLACK ? 'black' : 'white');
-                cell.appendChild(piece);
-                
-                if (pieceValue === BLACK) blackScore++;
-                else if (pieceValue === WHITE) whiteScore++;
-            } else if (showHints && validMoves.some(move => move.r === r && move.c === c)) {
-                // Show hint for valid moves
-                const hint = document.createElement('div');
-                hint.className = 'valid-move-hint ' + (currentPlayer === BLACK ? 'bg-gray-800' : 'bg-white');
-                cell.appendChild(hint);
-                
-                // Smooth fade-in for initial render
-                setTimeout(() => {
-                    hint.classList.add('show');
-                }, 50);
-            }
-
-            elements.board.appendChild(cell);
+            elements.board.appendChild(createCell(r, c));
         }
     }
-    
+
     updateScoresAndTurn(blackScore, whiteScore);
 }
 
@@ -506,31 +517,28 @@ function updateScoresAndTurn(blackScore, whiteScore) {
     const elements = getCurrentElements();
     elements.blackScore.textContent = blackScore;
     elements.whiteScore.textContent = whiteScore;
-    
+
     // Update for both mobile and desktop
     if (blackScoreElement) blackScoreElement.textContent = blackScore;
     if (whiteScoreElement) whiteScoreElement.textContent = whiteScore;
     if (blackScoreElementDesktop) blackScoreElementDesktop.textContent = blackScore;
     if (whiteScoreElementDesktop) whiteScoreElementDesktop.textContent = whiteScore;
-    
-    // Update breathing animation for current player
-    if (currentPlayer === BLACK) {
-        elements.blackPlayerArea.classList.add('active');
-        elements.whitePlayerArea.classList.remove('active');
-        // Update both mobile and desktop
-        if (blackPlayerArea) blackPlayerArea.classList.add('active');
-        if (whitePlayerArea) whitePlayerArea.classList.remove('active');
-        if (blackPlayerAreaDesktop) blackPlayerAreaDesktop.classList.add('active');
-        if (whitePlayerAreaDesktop) whitePlayerAreaDesktop.classList.remove('active');
-    } else {
-        elements.whitePlayerArea.classList.add('active');
-        elements.blackPlayerArea.classList.remove('active');
-        // Update both mobile and desktop
-        if (whitePlayerArea) whitePlayerArea.classList.add('active');
-        if (blackPlayerArea) blackPlayerArea.classList.remove('active');
-        if (whitePlayerAreaDesktop) whitePlayerAreaDesktop.classList.add('active');
-        if (blackPlayerAreaDesktop) blackPlayerAreaDesktop.classList.remove('active');
-    }
+
+    updatePlayerAreas(currentPlayer);
+}
+
+// Helper function to update player area classes
+function updatePlayerAreas(player) {
+    const isBlack = player === BLACK;
+    const blackAreas = [blackPlayerArea, blackPlayerAreaDesktop, getCurrentElements().blackPlayerArea];
+    const whiteAreas = [whitePlayerArea, whitePlayerAreaDesktop, getCurrentElements().whitePlayerArea];
+
+    blackAreas.forEach(area => {
+        if (area) area.classList.toggle('active', isBlack);
+    });
+    whiteAreas.forEach(area => {
+        if (area) area.classList.toggle('active', !isBlack);
+    });
 }
 
 async function updateBoardAnimated(newPiecePos, piecesToFlip) {
@@ -587,86 +595,86 @@ async function updateBoardAnimated(newPiecePos, piecesToFlip) {
 async function renderBoardFastAnimated() {
     const elements = getCurrentElements();
     const animationPromises = [];
-    
-    // First, clear all existing hints to ensure clean state
-    const allCells = elements.board.querySelectorAll('.cell');
+
+    clearAllHints(elements.board);
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const cell = elements.board.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            if (!cell) continue;
+            animationPromises.push(
+                handleCellFastAnimation(cell, r, c)
+            );
+        }
+    }
+
+    await Promise.all(animationPromises);
+    updateScoresAndValidMoves();
+}
+
+function clearAllHints(boardElement) {
+    const allCells = boardElement.querySelectorAll('.cell');
     allCells.forEach(cell => {
         const existingHint = cell.querySelector('.valid-move-hint');
         if (existingHint) {
             existingHint.remove();
         }
     });
-    
-    // First pass: remove invalid pieces and add new pieces with fast animations
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-            const cell = elements.board.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-            if (!cell) continue;
-            
-            const existingPiece = cell.querySelector('.piece');
-            const boardValue = board[r][c];
-            
-            if (boardValue === EMPTY) {
-                // Remove piece if it exists
-                if (existingPiece) {
-                    existingPiece.remove();
-                }
-                // Clear any hints (redundant but safe)
-                const existingHint = cell.querySelector('.valid-move-hint');
-                if (existingHint) existingHint.remove();
-            } else {
-                // There should be a piece here
-                const expectedColor = boardValue === BLACK ? 'black' : 'white';
-                
-                if (!existingPiece) {
-                    // Add new piece with fast placement animation
-                    const newPiece = document.createElement('div');
-                    newPiece.className = `piece fast-placing ${expectedColor}`;
-                    cell.appendChild(newPiece);
-                    
-                    // Create promise for animation completion
-                    const promise = new Promise(resolve => {
-                        setTimeout(() => {
-                            newPiece.classList.remove('fast-placing');
-                            resolve();
-                        }, 100); // Fast placement duration
-                    });
-                    animationPromises.push(promise);
-                } else {
-                    // Check if piece needs to flip color
-                    const currentColor = existingPiece.classList.contains('black') ? 'black' : 'white';
-                    if (currentColor !== expectedColor) {
-                        // Animate color change with fast flip
-                        existingPiece.classList.add('fast-flipping');
-                        
-                        const promise = new Promise(resolve => {
-                            // Change color at halfway point
-                            setTimeout(() => {
-                                existingPiece.className = `piece fast-flipping gameplay ${expectedColor}`;
-                            }, 75); // Half of fast flip duration
-                            
-                            // Remove animation class when complete
-                            setTimeout(() => {
-                                existingPiece.classList.remove('fast-flipping');
-                                resolve();
-                            }, 150); // Full fast flip duration
-                        });
-                        animationPromises.push(promise);
-                    }
-                }
-                
-                // Clear any hints on occupied cells
-                const existingHint = cell.querySelector('.valid-move-hint');
-                if (existingHint) existingHint.remove();
+}
+
+function handleCellFastAnimation(cell, r, c) {
+    const existingPiece = cell.querySelector('.piece');
+    const boardValue = board[r][c];
+
+    if (boardValue === EMPTY) {
+        if (existingPiece) {
+            existingPiece.remove();
+        }
+        removeHint(cell);
+        return Promise.resolve();
+    } else {
+        const expectedColor = boardValue === BLACK ? 'black' : 'white';
+        if (!existingPiece) {
+            return animateNewPiece(cell, expectedColor);
+        } else {
+            const currentColor = existingPiece.classList.contains('black') ? 'black' : 'white';
+            if (currentColor !== expectedColor) {
+                return animateFlipPiece(existingPiece, expectedColor);
             }
         }
+        removeHint(cell);
+        return Promise.resolve();
     }
-    
-    // Wait for all animations to complete
-    await Promise.all(animationPromises);
-    
-    // Update scores and valid moves after animations
-    updateScoresAndValidMoves();
+}
+
+function removeHint(cell) {
+    const existingHint = cell.querySelector('.valid-move-hint');
+    if (existingHint) existingHint.remove();
+}
+
+function animateNewPiece(cell, color) {
+    return new Promise(resolve => {
+        const newPiece = document.createElement('div');
+        newPiece.className = `piece fast-placing ${color}`;
+        cell.appendChild(newPiece);
+        setTimeout(() => {
+            newPiece.classList.remove('fast-placing');
+            resolve();
+        }, 100);
+    });
+}
+
+function animateFlipPiece(piece, color) {
+    return new Promise(resolve => {
+        piece.classList.add('fast-flipping');
+        setTimeout(() => {
+            piece.className = `piece fast-flipping gameplay ${color}`;
+        }, 75);
+        setTimeout(() => {
+            piece.classList.remove('fast-flipping');
+            resolve();
+        }, 150);
+    });
 }
 
 function updateScoresOnly() {
@@ -733,34 +741,38 @@ function getPiecesToFlip(r, c, player) {
     const piecesToFlip = [];
 
     for (const dir of directions) {
-        let currentPieces = [];
-        let row = r + dir.r;
-        let col = c + dir.c;
-
-        // Check if the adjacent piece is an opponent's piece
-        if (row >= 0 && row < 8 && col >= 0 && col < 8 && board[row][col] === opponent) {
-            currentPieces.push({ r: row, c: col });
-            
-            // Continue in this direction
-            while (true) {
-                row += dir.r;
-                col += dir.c;
-                
-                if (row < 0 || row >= 8 || col < 0 || col >= 8 || board[row][col] === EMPTY) {
-                    break;
-                }
-                
-                if (board[row][col] === player) {
-                    // Found a bracketing piece, this is a valid line
-                    piecesToFlip.push(...currentPieces);
-                    break;
-                }
-                
-                currentPieces.push({ r: row, c: col });
-            }
-        }
+        piecesToFlip.push(...getFlipsInDirection(r, c, player, opponent, dir));
     }
     return piecesToFlip;
+}
+
+function getFlipsInDirection(r, c, player, opponent, dir) {
+    let flips = [];
+    let row = r + dir.r;
+    let col = c + dir.c;
+
+    // Check if the adjacent piece is an opponent's piece
+    if (row >= 0 && row < 8 && col >= 0 && col < 8 && board[row][col] === opponent) {
+        flips.push({ r: row, c: col });
+
+        // Continue in this direction
+        while (true) {
+            row += dir.r;
+            col += dir.c;
+
+            if (row < 0 || row >= 8 || col < 0 || col >= 8 || board[row][col] === EMPTY) {
+                return [];
+            }
+
+            if (board[row][col] === player) {
+                // Found a bracketing piece, this is a valid line
+                return flips;
+            }
+
+            flips.push({ r: row, c: col });
+        }
+    }
+    return [];
 }
 
 function getValidMoves(player) {
@@ -881,35 +893,44 @@ function endGame() {
     let blackScore = 0;
     let whiteScore = 0;
     const elements = getCurrentElements();
-    
-    for(let r=0; r<8; r++){
-        for(let c=0; c<8; c++){
-            if(board[r][c] === BLACK) blackScore++;
-            if(board[r][c] === WHITE) whiteScore++;
+
+    // Count scores
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c] === BLACK) blackScore++;
+            if (board[r][c] === WHITE) whiteScore++;
         }
     }
-    
-    let winnerMessage;
-    if (blackScore > whiteScore) {
-        winnerMessage = `Game Over! Black wins ${blackScore} to ${whiteScore}.`;
-    } else if (whiteScore > blackScore) {
-        winnerMessage = `Game Over! White wins ${whiteScore} to ${blackScore}.`;
-    } else {
-        winnerMessage = `Game Over! It's a draw, ${blackScore} to ${whiteScore}.`;
-    }
-    
+
+    const winnerMessage = getWinnerMessage(blackScore, whiteScore);
+
     elements.messageBox.textContent = winnerMessage;
     // Update both mobile and desktop message boxes
     if (messageBoxElement) messageBoxElement.textContent = winnerMessage;
     if (messageBoxElementDesktop) messageBoxElementDesktop.textContent = winnerMessage;
-    
-    // Remove active states from all player areas
+
+    removeActivePlayerAreas();
+
+    elements.board.style.pointerEvents = 'none';
+}
+
+// Helper to get winner message
+function getWinnerMessage(blackScore, whiteScore) {
+    if (blackScore > whiteScore) {
+        return `Game Over! Black wins ${blackScore} to ${whiteScore}.`;
+    } else if (whiteScore > blackScore) {
+        return `Game Over! White wins ${whiteScore} to ${blackScore}.`;
+    } else {
+        return `Game Over! It's a draw, ${blackScore} to ${whiteScore}.`;
+    }
+}
+
+// Helper to remove active states from all player areas
+function removeActivePlayerAreas() {
     if (blackPlayerArea) blackPlayerArea.classList.remove('active');
     if (whitePlayerArea) whitePlayerArea.classList.remove('active');
     if (blackPlayerAreaDesktop) blackPlayerAreaDesktop.classList.remove('active');
     if (whitePlayerAreaDesktop) whitePlayerAreaDesktop.classList.remove('active');
-    
-    elements.board.style.pointerEvents = 'none';
 }
 
 // Theme initialization (system preference only)
