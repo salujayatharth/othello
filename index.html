@@ -222,36 +222,143 @@
                 touch-action: manipulation;
             }
         }
+        
+        /* Desktop/Landscape layout with buttons on sides */
+        @media screen and (min-width: 769px) and (orientation: landscape), 
+               screen and (min-width: 1024px) {
+            .main-container {
+                display: grid;
+                grid-template-columns: 180px 1fr 180px;
+                grid-template-rows: auto 1fr auto;
+                grid-template-areas: 
+                    "left-top header right-top"
+                    "left-middle center right-middle"
+                    "left-bottom . right-bottom";
+                max-width: 1200px;
+                width: 100%;
+                height: 100vh;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .game-header {
+                grid-area: header;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 0;
+            }
+            
+            .game-center {
+                grid-area: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .top-left-btn {
+                grid-area: left-top;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .top-right-btn {
+                grid-area: right-top;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .bottom-left-btn {
+                grid-area: left-bottom;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .bottom-right-btn {
+                grid-area: right-bottom;
+                display: flex;
+                justify-content: center;
+            }
+            
+            /* Hide the original header buttons container and mobile undo/redo in desktop */
+            .header-buttons-container,
+            .mobile-undo-redo {
+                display: none;
+            }
+        }
+        
+        /* Mobile/Portrait layout */
+        @media screen and (max-width: 768px), 
+               screen and (orientation: portrait) and (max-width: 1023px) {
+            /* Hide desktop button positions in mobile */
+            .top-left-btn,
+            .top-right-btn,
+            .bottom-left-btn,
+            .bottom-right-btn {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen max-h-screen overflow-hidden">
 
-    <div class="w-full max-w-4xl mx-auto flex flex-col items-center h-full justify-center px-4 py-2">
-        <div class="flex justify-between items-center mb-1 w-full max-w-2xl">
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Othello</h1>
-            <div class="flex items-center space-x-2">
-                <button id="sound-toggle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Sound">
-                    <span id="sound-icon">🔊</span>
+    <div class="w-full max-w-4xl mx-auto flex flex-col items-center h-full justify-center px-4 py-2 main-container">
+        
+        <!-- Sound toggle button (top-left in desktop, top-right in mobile) -->
+        <div class="top-left-btn">
+            <button id="sound-toggle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Sound">
+                <span id="sound-icon">🔊</span>
+            </button>
+        </div>
+        
+        <!-- New Game button (top-right in desktop, top-right in mobile) -->
+        <div class="top-right-btn">
+            <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+        </div>
+        
+        <!-- Header with title (center top) -->
+        <div class="flex justify-between items-center mb-1 w-full max-w-2xl game-header">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mx-auto">Othello</h1>
+            <div class="flex items-center space-x-2 header-buttons-container">
+                <button id="sound-toggle-btn-mobile" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" title="Toggle Sound">
+                    <span id="sound-icon-mobile">🔊</span>
                 </button>
-                <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+                <button id="new-game-btn-mobile" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
             </div>
         </div>
         
-
-        <!-- White Player (Player 1) - Top Side -->
-        <div id="white-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mb-1 transition-all duration-1000">
-            <div class="flex items-center justify-center space-x-2">
-                <div class="w-5 h-5 rounded-full bg-white border border-gray-300"></div>
-                <span class="font-bold text-lg" id="white-score">2</span>
-                <span class="font-medium text-base">White</span>
-            </div>
+        <!-- Undo button (bottom-left in desktop, bottom center in mobile) -->
+        <div class="bottom-left-btn">
+            <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                ↶ Undo
+            </button>
         </div>
         
-        <!-- Game Message Box -->
-        <div id="message-box" class="text-center font-semibold text-sm min-h-[20px] mb-2 text-green-600 dark:text-green-400"></div>
+        <!-- Redo button (bottom-right in desktop, bottom center in mobile) -->
+        <div class="bottom-right-btn">
+            <button id="redo-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                Redo ↷
+            </button>
+        </div>
 
-        <!-- Game Board -->
-        <div id="board" class="board shadow-2xl flex-shrink-0 mb-2"></div>
+        <!-- Game center area -->
+        <div class="game-center">
+            <!-- White Player (Player 1) - Top Side -->
+            <div id="white-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mb-1 transition-all duration-1000">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="w-5 h-5 rounded-full bg-white border border-gray-300"></div>
+                    <span class="font-bold text-lg" id="white-score">2</span>
+                    <span class="font-medium text-base">White</span>
+                </div>
+            </div>
+            
+            <!-- Game Message Box -->
+            <div id="message-box" class="text-center font-semibold text-sm min-h-[20px] mb-2 text-green-600 dark:text-green-400"></div>
+
+            <!-- Game Board -->
+            <div id="board" class="board shadow-2xl flex-shrink-0 mb-2"></div>
 
         <!-- No Moves Popup Modal -->
         <div id="no-moves-popup" class="fixed inset-0 flex items-center justify-center z-50 hidden">
@@ -287,31 +394,32 @@
             </div>
         </div>
 
-        <!-- Black Player (Player 2) - Bottom Side -->
-        <div id="black-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mt-1 transition-all duration-1000">
-            <div class="flex items-center justify-center space-x-2">
-                <div class="w-5 h-5 rounded-full bg-gray-800 dark:bg-gray-700"></div>
-                <span class="font-bold text-lg" id="black-score">2</span>
-                <span class="font-medium text-base">Black</span>
+            <!-- Black Player (Player 2) - Bottom Side -->
+            <div id="black-player-area" class="player-area bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md mt-1 transition-all duration-1000">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="w-5 h-5 rounded-full bg-gray-800 dark:bg-gray-700"></div>
+                    <span class="font-bold text-lg" id="black-score">2</span>
+                    <span class="font-medium text-base">Black</span>
+                </div>
             </div>
-        </div>
 
-        <!-- Controls -->
-        <div class="mt-2 flex justify-center items-center">
-            <div class="flex items-center space-x-2">
-                <input type="checkbox" id="show-hints-checkbox" class="h-3 w-3 rounded text-green-600 focus:ring-green-500" checked>
-                <label for="show-hints-checkbox" class="text-xs font-medium text-gray-700 dark:text-gray-300">Show valid moves</label>
+            <!-- Controls -->
+            <div class="mt-2 flex justify-center items-center">
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="show-hints-checkbox" class="h-3 w-3 rounded text-green-600 focus:ring-green-500" checked>
+                    <label for="show-hints-checkbox" class="text-xs font-medium text-gray-700 dark:text-gray-300">Show valid moves</label>
+                </div>
             </div>
-        </div>
 
-        <!-- Undo/Redo Controls at Bottom -->
-        <div class="mt-4 flex justify-center items-center space-x-4">
-            <button id="undo-btn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
-                ↶ Undo
-            </button>
-            <button id="redo-btn" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
-                Redo ↷
-            </button>
+            <!-- Mobile-only Undo/Redo Controls -->
+            <div class="mt-4 flex justify-center items-center space-x-4 mobile-undo-redo">
+                <button id="undo-btn-mobile" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                    ↶ Undo
+                </button>
+                <button id="redo-btn-mobile" class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm" disabled>
+                    Redo ↷
+                </button>
+            </div>
         </div>
     </div>
 
@@ -323,13 +431,18 @@
         const whitePlayerArea = document.getElementById('white-player-area');
         const messageBoxElement = document.getElementById('message-box');
         const newGameBtn = document.getElementById('new-game-btn');
+        const newGameBtnMobile = document.getElementById('new-game-btn-mobile');
         const showHintsCheckbox = document.getElementById('show-hints-checkbox');
 
         const undoBtn = document.getElementById('undo-btn');
         const redoBtn = document.getElementById('redo-btn');
+        const undoBtnMobile = document.getElementById('undo-btn-mobile');
+        const redoBtnMobile = document.getElementById('redo-btn-mobile');
 
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
+        const soundToggleBtnMobile = document.getElementById('sound-toggle-btn-mobile');
         const soundIcon = document.getElementById('sound-icon');
+        const soundIconMobile = document.getElementById('sound-icon-mobile');
 
         // No moves popup elements
         const noMovesPopup = document.getElementById('no-moves-popup');
@@ -410,8 +523,15 @@
 
         // Update sound icon based on current state
         function updateSoundIcon() {
-            soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
-            soundToggleBtn.title = soundEnabled ? 'Disable Sound' : 'Enable Sound';
+            const iconText = soundEnabled ? '🔊' : '🔇';
+            const titleText = soundEnabled ? 'Disable Sound' : 'Enable Sound';
+            
+            soundIcon.textContent = iconText;
+            soundToggleBtn.title = titleText;
+            if (soundIconMobile) {
+                soundIconMobile.textContent = iconText;
+                soundToggleBtnMobile.title = titleText;
+            }
         }
 
         // Toggle sound on/off
@@ -531,9 +651,15 @@
             const canUndo = currentHistoryIndex >= 0;
             const canRedo = currentHistoryIndex < gameHistory.length - 1;
             
-            // Update buttons
+            // Update desktop buttons
             undoBtn.disabled = !canUndo;
             redoBtn.disabled = !canRedo;
+            
+            // Update mobile buttons
+            if (undoBtnMobile && redoBtnMobile) {
+                undoBtnMobile.disabled = !canUndo;
+                redoBtnMobile.disabled = !canRedo;
+            }
         }
 
         // Undo last move
@@ -1155,7 +1281,9 @@
 
         // Event Listeners
         boardElement.addEventListener('click', handleCellClick);
-        newGameBtn.addEventListener('click', async () => {
+        
+        // New Game button listeners
+        const newGameHandler = async () => {
             // Show confirmation dialog
             if (confirm('Are you sure you want to start a new game? This will reset the current game.')) {
                 boardElement.style.pointerEvents = 'none';
@@ -1164,15 +1292,31 @@
                 clearSavedGameState(); // Clear saved state before starting new game
                 initGame();
             }
-        });
+        };
+        newGameBtn.addEventListener('click', newGameHandler);
+        if (newGameBtnMobile) {
+            newGameBtnMobile.addEventListener('click', newGameHandler);
+        }
+        
+        // Undo/Redo button listeners
         undoBtn.addEventListener('click', undoMove);
         redoBtn.addEventListener('click', redoMove);
+        if (undoBtnMobile && redoBtnMobile) {
+            undoBtnMobile.addEventListener('click', undoMove);
+            redoBtnMobile.addEventListener('click', redoMove);
+        }
+        
         showHintsCheckbox.addEventListener('change', (e) => {
             showHints = e.target.checked;
             updateScoresAndValidMoves();
             saveGameState(); // Save state when hints preference changes
         });
+        
+        // Sound toggle listeners
         soundToggleBtn.addEventListener('click', toggleSound);
+        if (soundToggleBtnMobile) {
+            soundToggleBtnMobile.addEventListener('click', toggleSound);
+        }
         
         // No moves popup OK button event listener
         popupOkBtn.addEventListener('click', hideNoMovesPopup);
