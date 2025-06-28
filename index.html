@@ -579,7 +579,7 @@
                         cell.appendChild(piece);
                         
                         if (pieceValue === BLACK) blackScore++;
-                        else whiteScore++;
+                        else if (pieceValue === WHITE) whiteScore++;
                     } else if (showHints && validMoves.some(move => move.r === r && move.c === c)) {
                         // Show hint for valid moves
                         const hint = document.createElement('div');
