@@ -229,6 +229,9 @@
                     <span id="sound-icon">🔊</span>
                 </button>
                 <button id="new-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm">New Game</button>
+                <!-- Debug buttons for testing popup -->
+                <button onclick="window.showNoMovesPopup(1)" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-1 px-2 rounded text-xs" title="Test Black No Moves">B</button>
+                <button onclick="window.showNoMovesPopup(2)" class="bg-white hover:bg-gray-100 text-black font-bold py-1 px-2 rounded text-xs border" title="Test White No Moves">W</button>
             </div>
         </div>
         
@@ -955,6 +958,9 @@
             if (validMovesForNextPlayer.length > 0) {
                  // Next player can move
                 updateScoresAndValidMoves();
+                // Save game state and re-enable board
+                saveGameState();
+                boardElement.style.pointerEvents = 'auto';
             } else {
                 // Next player must pass - show popup instead of messageBox
                 showNoMovesPopup(currentPlayer);
@@ -969,11 +975,9 @@
                      endGame();
                      return;
                 }
+                // Save game state but don't re-enable board yet (popup will handle it)
+                saveGameState();
             }
-            
-            // Save game state after turn switch
-            saveGameState();
-            boardElement.style.pointerEvents = 'auto';
         }
 
         function endGame() {
@@ -1146,6 +1150,10 @@
                 boardElement.style.pointerEvents = 'auto';
             }, 300); // Match transition duration
         }
+        
+        // Make functions available globally for testing
+        window.showNoMovesPopup = showNoMovesPopup;
+        window.hideNoMovesPopup = hideNoMovesPopup;
 
         // Event Listeners
         boardElement.addEventListener('click', handleCellClick);
@@ -1170,6 +1178,13 @@
         
         // No moves popup OK button event listener
         popupOkBtn.addEventListener('click', hideNoMovesPopup);
+        
+        // Close popup on overlay click
+        noMovesPopup.addEventListener('click', (e) => {
+            if (e.target === noMovesPopup) {
+                hideNoMovesPopup();
+            }
+        });
 
         // Initialize theme and start game
         window.onload = () => {
