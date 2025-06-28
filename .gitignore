@@ -1,0 +1,10 @@
+# Temporary files
+*.backup
+*.tmp
+*~
+
+# Test files
+/tmp/
+
+# Server log files
+*.log
