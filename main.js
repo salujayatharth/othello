@@ -46,6 +46,33 @@ function isDesktopMode() {
     return window.innerWidth >= 1024;
 }
 
+// Track the current desktop mode state to detect changes
+let currentDesktopMode = isDesktopMode();
+
+// Handle window resize events to manage desktop/mobile mode switching
+function handleResize() {
+    const newDesktopMode = isDesktopMode();
+    
+    // Only re-render if the desktop mode actually changed
+    if (newDesktopMode !== currentDesktopMode) {
+        currentDesktopMode = newDesktopMode;
+        
+        // Re-render the board on the correct element
+        renderBoard();
+        
+        // Update UI elements to reflect current state
+        updateScoresAndValidMoves();
+        updateUndoRedoButtons();
+        updateSoundIcon();
+        
+        // Sync hint checkbox states
+        if (showHintsCheckbox && showHintsCheckboxDesktop) {
+            showHintsCheckbox.checked = showHints;
+            showHintsCheckboxDesktop.checked = showHints;
+        }
+    }
+}
+
 // Get current elements based on screen size
 function getCurrentElements() {
     const desktop = isDesktopMode();
@@ -1051,6 +1078,9 @@ function setupEventListeners() {
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('msfullscreenchange', handleFullscreenChange);
     
+    // Listen for window resize to handle orientation changes
+    window.addEventListener('resize', handleResize);
+    
     // No moves popup handlers
     if (popupOkBtn) popupOkBtn.addEventListener('click', hideNoMovesPopup);
     
@@ -1070,6 +1100,9 @@ window.onload = () => {
     audioManager.init();
     audioManager.loadSoundPreference();
     setupEventListeners();
+    
+    // Set initial desktop mode state
+    currentDesktopMode = isDesktopMode();
     
     // Try to load saved game state, if not available start new game
     if (!loadGameState()) {
