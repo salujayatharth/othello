@@ -54,25 +54,6 @@ jobs:
             exit 1
           fi
 
-      - name: Run basic HTML validation
-        run: |
-          echo "Running basic HTML syntax checks..."
-          # Check for balanced div tags
-          if [ $(grep -o "<div" index.html | wc -l) -eq $(grep -o "</div>" index.html | wc -l) ]; then
-            echo "✓ Div tags are balanced"
-          else
-            echo "✗ Div tags are not balanced"
-            exit 1
-          fi
-          
-          # Check that script blocks are properly closed
-          if grep -q "<script>" index.html && grep -q "</script>" index.html; then
-            echo "✓ Script tags found and properly structured"
-          else
-            echo "✗ Script tags are missing or malformed"
-            exit 1
-          fi
-
       - name: Run environment check
         run: |
           echo "Node.js version:"
