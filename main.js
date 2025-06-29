@@ -1085,4 +1085,51 @@ window.onload = () => {
     if (showHintsCheckbox) showHintsCheckbox.checked = showHints;
     if (showHintsCheckboxDesktop) showHintsCheckboxDesktop.checked = showHints;
     updateSoundIcon();
+    
+    // Register service worker for PWA functionality
+    registerServiceWorker();
 };
+
+// PWA Service Worker Registration
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('SW: Service Worker registered successfully:', registration.scope);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        console.log('SW: New service worker available');
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('SW: New content available, refresh to update');
+                                // Could show a notification to user here
+                            }
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.log('SW: Service Worker registration failed:', error);
+                });
+        });
+    }
+}
+
+// PWA Install Prompt Handling
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('PWA: Install prompt available');
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    // Could show custom install button here
+});
+
+window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA: App was installed');
+    deferredPrompt = null;
+});
