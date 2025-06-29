@@ -46,6 +46,22 @@ button, label, .cell, .piece {
         height: min(88vw, 350px);
     }
 }
+
+/* Extra small mobile screens */
+@media screen and (max-width: 375px) {
+    .board {
+        width: min(85vw, 300px);
+        height: min(85vw, 300px);
+        gap: 3px;
+        padding: 6px;
+        border-width: 6px;
+    }
+    
+    .lg\\:hidden {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
 .cell {
     background-color: #15803d; /* Green */
     border-radius: 4px;
