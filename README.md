@@ -27,6 +27,7 @@
 - 💾 **Local Storage** - Automatic game state saving, sound preferences, and settings persistence
 - 🔊 **Sound Effects** - Audio feedback for piece placement with toggle control
 - 📱 **Fullscreen Mode** - Mobile fullscreen toggle for immersive gameplay experience
+- 🔧 **Progressive Web App** - Install the game as a native-like app, works offline
 
 ## 🎯 How to Play
 
@@ -58,6 +59,7 @@ Have the majority of your colored pieces on the board when the game ends.
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
 - **Styling**: Tailwind CSS
 - **Fonts**: Inter (Google Fonts)
+- **PWA**: Service Worker, Web App Manifest
 - **Deployment**: GitHub Pages
 - **CI/CD**: GitHub Actions
 
@@ -95,12 +97,40 @@ Have the majority of your colored pieces on the board when the game ends.
 - All game logic is contained in `index.html`
 - Responsive design works on all screen sizes
 
+## 📱 Progressive Web App (PWA)
+
+This Othello game is a fully-featured Progressive Web App with the following capabilities:
+
+### Installation
+- **Install on Mobile**: Open in Chrome/Safari and tap "Add to Home Screen"
+- **Install on Desktop**: Look for the install icon in the address bar or use the install prompt
+
+### Features
+- **📴 Offline Play**: Game works completely offline after first visit
+- **🏠 App-like Experience**: Launches in standalone mode without browser UI
+- **🔄 Auto-updates**: New versions are cached and updated automatically
+- **💾 Persistent Storage**: Game state is saved even when offline
+- **🎨 Native Theming**: Matches your device's theme and provides proper app icons
+
+### PWA Files
+- `manifest.json` - App configuration and metadata
+- `sw.js` - Service Worker for offline functionality
+- `icons/` - App icons for different devices and sizes
+
 ## 📁 Project Structure
 
 ```
 othello/
 ├── index.html          # Complete game implementation
-├── README.md          # This file
+├── main.js            # Main game logic and PWA functionality
+├── AudioManager.js    # Audio management system
+├── style.css          # Custom styles and animations
+├── manifest.json      # PWA manifest configuration
+├── sw.js             # Service Worker for offline functionality
+├── favicon.ico       # App favicon
+├── drop.mp3          # Sound effect file
+├── icons/            # PWA app icons (various sizes)
+├── README.md         # This file
 └── .github/
     └── workflows/
         └── static.yml # GitHub Pages deployment
@@ -130,7 +160,6 @@ Contributions are welcome! Here's how you can help:
 - 🎵 Background music
 - 🏆 Achievement system
 - 🌐 Multiplayer support
-- 📱 PWA (Progressive Web App) features
 
 ## 📝 License
 
