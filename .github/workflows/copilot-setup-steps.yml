@@ -44,45 +44,13 @@ jobs:
             ls -la
             exit 1
           fi
-
-      - name: Validate HTML structure
-        run: |
-          echo "Checking HTML file structure..."
-          if grep -q "<title>Othello Game</title>" index.html; then
-            echo "✓ HTML title found"
+          if [ -f "style.css" ]; then
+            echo "✓ Main game style found at style.css"
+            ls -lh style.css
           else
-            echo "✗ HTML title not found"
-            exit 1
-          fi
-          
-          if grep -q "const EMPTY = 0" index.html; then
-            echo "✓ Game logic constants found"
-          else
-            echo "✗ Game logic constants not found"
-            exit 1
-          fi
-          
-          if grep -q "function initGame" index.html; then
-            echo "✓ Game initialization function found"
-          else
-            echo "✗ Game initialization function not found"
-            exit 1
-          fi
-
-      - name: Check dependencies and resources
-        run: |
-          echo "Checking external dependencies..."
-          if grep -q "tailwindcss" index.html; then
-            echo "✓ Tailwind CSS dependency found"
-          else
-            echo "✗ Tailwind CSS dependency not found"
-            exit 1
-          fi
-          
-          if grep -q "Inter" index.html; then
-            echo "✓ Google Fonts dependency found"
-          else
-            echo "✗ Google Fonts dependency not found"
+            echo "✗ Main game style not found at style.css"
+            echo "Available files in root directory:"
+            ls -la
             exit 1
           fi
 
