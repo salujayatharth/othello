@@ -7,14 +7,6 @@ body {
     padding-left: env(safe-area-inset-left, 0);
 }
 
-/* Mobile-specific viewport fixes */
-@supports (height: 100dvh) {
-    body {
-        min-height: 100dvh;
-        max-height: 100dvh;
-    }
-}
-
 /* Prevent text selection on interactive elements */
 button, label, .cell, .piece {
     -webkit-user-select: none;
@@ -34,33 +26,9 @@ button, label, .cell, .piece {
     border-radius: 8px;
     padding: 8px;
     aspect-ratio: 1 / 1;
-    width: min(90vw, 400px);
-    height: min(90vw, 400px);
+    width: min(95vw, 85vh);
+    height: min(95vw, 85vh);
     margin: 0 auto;
-}
-
-/* Mobile-specific board sizing */
-@media screen and (max-width: 768px) {
-    .board {
-        width: min(88vw, 350px);
-        height: min(88vw, 350px);
-    }
-}
-
-/* Extra small mobile screens */
-@media screen and (max-width: 375px) {
-    .board {
-        width: min(85vw, 300px);
-        height: min(85vw, 300px);
-        gap: 3px;
-        padding: 6px;
-        border-width: 6px;
-    }
-    
-    .lg\\:hidden {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
 }
 .cell {
     background-color: #15803d; /* Green */
@@ -330,21 +298,6 @@ button, label, .cell, .piece {
         -webkit-text-size-adjust: none;
         -ms-content-zooming: none;
         touch-action: manipulation;
-    }
-    
-    /* Mobile container centering */
-    .lg\\:hidden {
-        max-width: 100vw;
-        padding-left: max(env(safe-area-inset-left), 8px);
-        padding-right: max(env(safe-area-inset-right), 8px);
-    }
-    
-    /* Ensure all game elements are centered */
-    .player-area, 
-    #message-box,
-    .board {
-        margin-left: auto;
-        margin-right: auto;
     }
     
     /* Hide desktop controls on mobile */
