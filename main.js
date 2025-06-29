@@ -46,6 +46,42 @@ function isDesktopMode() {
     return window.innerWidth >= 1024;
 }
 
+// Track the current desktop mode state to detect changes
+let currentDesktopMode = isDesktopMode();
+let resizeTimeout = null;
+
+// Handle window resize events to manage desktop/mobile mode switching
+function handleResize() {
+    // Debounce rapid resize events
+    if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+    }
+    
+    resizeTimeout = setTimeout(() => {
+        const newDesktopMode = isDesktopMode();
+        
+        // Only re-render if the desktop mode actually changed
+        if (newDesktopMode !== currentDesktopMode) {
+            currentDesktopMode = newDesktopMode;
+            
+            // Re-render the board on the correct element
+            renderBoard();
+            
+            // Update UI elements to reflect current state
+            updateScoresAndValidMoves();
+            updateUndoRedoButtons();
+            updateSoundIcon();
+            
+            // Sync hint checkbox states
+            if (showHintsCheckbox && showHintsCheckboxDesktop) {
+                showHintsCheckbox.checked = showHints;
+                showHintsCheckboxDesktop.checked = showHints;
+            }
+        }
+        resizeTimeout = null;
+    }, 100); // 100ms debounce delay
+}
+
 // Get current elements based on screen size
 function getCurrentElements() {
     const desktop = isDesktopMode();
@@ -350,7 +386,13 @@ function initGame() {
     gameHistory = []; // Reset move history
     currentHistoryIndex = -1; // Reset history index
     noMovesPopupShown = false; // Reset popup flag
-    messageBoxElement.textContent = '';
+    
+    // Clear message box for both mobile and desktop
+    const elements = getCurrentElements();
+    elements.messageBox.textContent = '';
+    if (messageBoxElement) messageBoxElement.textContent = '';
+    if (messageBoxElementDesktop) messageBoxElementDesktop.textContent = '';
+    
     renderBoard();
     updateUndoRedoButtons(); // Update button states
     saveGameState(); // Save initial state
@@ -358,6 +400,13 @@ function initGame() {
 
 function renderBoard() {
     const elements = getCurrentElements();
+    
+    // Safety check: ensure board element exists
+    if (!elements.board) {
+        console.warn('Board element not found for current mode:', isDesktopMode() ? 'desktop' : 'mobile');
+        return;
+    }
+    
     elements.board.innerHTML = '';
     let blackScore = 0;
     let whiteScore = 0;
@@ -1051,6 +1100,9 @@ function setupEventListeners() {
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('msfullscreenchange', handleFullscreenChange);
     
+    // Listen for window resize to handle orientation changes
+    window.addEventListener('resize', handleResize);
+    
     // No moves popup handlers
     if (popupOkBtn) popupOkBtn.addEventListener('click', hideNoMovesPopup);
     
@@ -1070,6 +1122,9 @@ window.onload = () => {
     audioManager.init();
     audioManager.loadSoundPreference();
     setupEventListeners();
+    
+    // Set initial desktop mode state
+    currentDesktopMode = isDesktopMode();
     
     // Try to load saved game state, if not available start new game
     if (!loadGameState()) {
